@@ -26,7 +26,7 @@
         ".vscode-test"
     ],
     "include": [
-        "src/**/*",
+        "src/panels/**/*",        "src/**/*",
         "test/**/*"
     ]
 }
