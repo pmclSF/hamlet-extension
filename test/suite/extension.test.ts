@@ -1,7 +1,9 @@
-import assert from 'assert';
+import { describe, it } from 'mocha';
+import { expect } from 'chai';
 
-suite('Extension Test Suite', () => {
-   test('Sample test', () => {
-       assert.strictEqual(1, 1);
-   });
+describe('Extension Test Suite', () => {
+    it('Sample test', () => {
+        console.log('Running sample test');
+        expect(true).to.be.true;
+    });
 });
