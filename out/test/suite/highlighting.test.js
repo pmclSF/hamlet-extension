@@ -37,13 +37,29 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const assert_1 = __importDefault(require("assert"));
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
 const vscode = __importStar(require("vscode"));
-suite('Hamlet Highlighting Configuration', () => {
-    const configuration = vscode.workspace.getConfiguration('hamlet.highlighting');
-    test('Default highlighting is enabled', () => {
-        assert_1.default.strictEqual(configuration.get('enabled'), true, 'Highlighting should be enabled by default');
+suite('Hamlet Highlighting Validation', () => {
+    // Option 2: Use process.cwd() + 'test/samples'
+    // This way, we're referencing the actual source directory,
+    // not the compiled output folder.
+    const sampleFiles = [
+        path.join(process.cwd(), 'test', 'samples', 'cypress-sample.ts'),
+        path.join(process.cwd(), 'test', 'samples', 'playwright-sample.ts'),
+        path.join(process.cwd(), 'test', 'samples', 'testrail-sample.ts')
+    ];
+    test('Sample files exist', () => {
+        sampleFiles.forEach(file => {
+            assert_1.default.ok(fs.existsSync(file), `Sample file ${file} should exist`);
+        });
     });
-    test('Framework colors are correctly configured', () => {
+    test('Highlighting configuration matches sample files', () => {
+        // Retrieve your extension's configuration:
+        const configuration = vscode.workspace.getConfiguration('hamlet.highlighting');
+        // Validate a setting is enabled:
+        assert_1.default.strictEqual(configuration.get('enabled'), true, 'Highlighting should be enabled');
+        // Validate expected color settings:
         const expectedColors = {
             cypress: '#04C38E',
             playwright: '#2EAD33',
@@ -52,8 +68,7 @@ suite('Hamlet Highlighting Configuration', () => {
         Object.entries(expectedColors).forEach(([framework, color]) => {
             assert_1.default.strictEqual(configuration.get(`colors.${framework}`), color, `${framework} color should match configuration`);
         });
-    });
-    test('Highlighting components are fully enabled', () => {
+        // Validate which components are highlighted:
         const expectedComponents = {
             assertions: true,
             hooks: true,
