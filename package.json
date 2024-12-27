@@ -4,194 +4,218 @@
     "description": "To test, or not to test - converts between Cypress, Playwright, and TestRail test frameworks",
     "version": "0.0.1",
     "engines": {
-      "vscode": "^1.85.0"
+        "vscode": "^1.85.0"
     },
     "categories": [
-      "Testing",
-      "Programming Languages"
+        "Testing",
+        "Programming Languages"
     ],
     "activationEvents": [
-      "onLanguage:javascript",
-      "onLanguage:typescript"
+        "onLanguage:javascript",
+        "onLanguage:typescript"
     ],
     "main": "./out/extension.js",
     "contributes": {
-      "commands": [
-        {
-          "command": "hamlet.showSettings",
-          "title": "Hamlet: Show Settings"
-        },
-        {
-          "command": "hamlet.convertToPlaywright",
-          "title": "Hamlet: Convert to Playwright"
-        },
-        {
-          "command": "hamlet.convertToCypress",
-          "title": "Hamlet: Convert to Cypress"
-        },
-        {
-          "command": "hamlet.convertToTestRail",
-          "title": "Hamlet: Convert to TestRail"
-        }
-      ],
-      "configuration": {
-        "title": "Hamlet",
-        "properties": {
-          "hamlet.frameworks.defaultSource": {
-            "type": "string",
-            "enum": ["cypress", "playwright", "testrail"],
-            "default": "cypress",
-            "description": "Default source framework for test conversion"
-          },
-          "hamlet.frameworks.defaultTarget": {
-            "type": "string",
-            "enum": ["cypress", "playwright", "testrail"],
-            "default": "playwright",
-            "description": "Default target framework for test conversion"
-          },
-          "hamlet.highlighting.enabled": {
-            "type": "boolean",
-            "default": true,
-            "description": "Enable/disable test highlighting"
-          },
-          "hamlet.highlighting.colors": {
-            "type": "object",
-            "default": {
-              "cypress": "#04C38E",
-              "playwright": "#2EAD33",
-              "testrail": "#126BC5"
+        "commands": [
+            {
+                "command": "hamlet.showSettings",
+                "title": "Hamlet: Show Settings"
             },
-            "description": "Custom colors for each framework's highlighting"
-          },
-          "hamlet.highlighting.components": {
-            "type": "object",
-            "default": {
-              "assertions": true,
-              "hooks": true,
-              "commands": true
+            {
+                "command": "hamlet.convertToPlaywright",
+                "title": "Hamlet: Convert to Playwright"
             },
-            "description": "Select which test components to highlight"
-          },
-          "hamlet.codeStyle.indentation": {
-            "type": "string",
-            "enum": ["spaces", "tabs"],
-            "default": "spaces",
-            "description": "Indentation style for converted tests"
-          },
-          "hamlet.codeStyle.indentSize": {
-            "type": "number",
-            "default": 2,
-            "description": "Number of spaces for indentation"
-          },
-          "hamlet.codeStyle.quoteStyle": {
-            "type": "string",
-            "enum": ["single", "double"],
-            "default": "single",
-            "description": "Quote style for strings in converted tests"
-          },
-          "hamlet.codeStyle.semicolons": {
-            "type": "boolean",
-            "default": true,
-            "description": "Include semicolons in converted code"
-          },
-          "hamlet.conversion.autoConvert": {
-            "type": "boolean",
-            "default": false,
-            "description": "Automatically convert tests on save"
-          },
-          "hamlet.conversion.showPreview": {
-            "type": "boolean",
-            "default": true,
-            "description": "Show preview before applying conversion"
-          },
-          "hamlet.conversion.keepOriginal": {
-            "type": "boolean",
-            "default": true,
-            "description": "Keep original file as backup"
-          },
-          "hamlet.conversion.outputLocation": {
-            "type": "string",
-            "enum": ["sameDirectory", "customDirectory"],
-            "default": "sameDirectory",
-            "description": "Where to save converted test files"
-          },
-          "hamlet.conversion.customOutputPath": {
-            "type": "string",
-            "default": "",
-            "description": "Custom directory path for converted files"
-          },
-          "hamlet.errors.warningLevel": {
-            "type": "string",
-            "enum": ["error", "warning", "info"],
-            "default": "warning",
-            "description": "Level of warning for conversion issues"
-          },
-          "hamlet.errors.autoFix": {
-            "type": "boolean",
-            "default": true,
-            "description": "Automatically fix simple conversion issues"
-          },
-          "hamlet.errors.inlineWarnings": {
-            "type": "boolean",
-            "default": true,
-            "description": "Show conversion warnings inline with code"
-          }
-        }
-      },
-      "keybindings": [
-        {
-          "command": "hamlet.convertToPlaywright",
-          "key": "ctrl+shift+t p",
-          "mac": "cmd+shift+t p",
-          "when": "editorTextFocus"
+            {
+                "command": "hamlet.convertToCypress",
+                "title": "Hamlet: Convert to Cypress"
+            },
+            {
+                "command": "hamlet.convertToTestRail",
+                "title": "Hamlet: Convert to TestRail"
+            }
+        ],
+        "configuration": {
+            "title": "Hamlet",
+            "properties": {
+                "hamlet.frameworks.defaultSource": {
+                    "type": "string",
+                    "enum": [
+                        "cypress",
+                        "playwright",
+                        "testrail"
+                    ],
+                    "default": "cypress",
+                    "description": "Default source framework for test conversion"
+                },
+                "hamlet.frameworks.defaultTarget": {
+                    "type": "string",
+                    "enum": [
+                        "cypress",
+                        "playwright",
+                        "testrail"
+                    ],
+                    "default": "playwright",
+                    "description": "Default target framework for test conversion"
+                },
+                "hamlet.highlighting.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable/disable test highlighting"
+                },
+                "hamlet.highlighting.colors": {
+                    "type": "object",
+                    "default": {
+                        "cypress": "#04C38E",
+                        "playwright": "#2EAD33",
+                        "testrail": "#126BC5"
+                    },
+                    "description": "Custom colors for each framework's highlighting"
+                },
+                "hamlet.highlighting.components": {
+                    "type": "object",
+                    "default": {
+                        "assertions": true,
+                        "hooks": true,
+                        "commands": true
+                    },
+                    "description": "Select which test components to highlight"
+                },
+                "hamlet.codeStyle.indentation": {
+                    "type": "string",
+                    "enum": [
+                        "spaces",
+                        "tabs"
+                    ],
+                    "default": "spaces",
+                    "description": "Indentation style for converted tests"
+                },
+                "hamlet.codeStyle.indentSize": {
+                    "type": "number",
+                    "default": 2,
+                    "description": "Number of spaces for indentation"
+                },
+                "hamlet.codeStyle.quoteStyle": {
+                    "type": "string",
+                    "enum": [
+                        "single",
+                        "double"
+                    ],
+                    "default": "single",
+                    "description": "Quote style for strings in converted tests"
+                },
+                "hamlet.codeStyle.semicolons": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Include semicolons in converted code"
+                },
+                "hamlet.conversion.autoConvert": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Automatically convert tests on save"
+                },
+                "hamlet.conversion.showPreview": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show preview before applying conversion"
+                },
+                "hamlet.conversion.keepOriginal": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Keep original file as backup"
+                },
+                "hamlet.conversion.outputLocation": {
+                    "type": "string",
+                    "enum": [
+                        "sameDirectory",
+                        "customDirectory"
+                    ],
+                    "default": "sameDirectory",
+                    "description": "Where to save converted test files"
+                },
+                "hamlet.conversion.customOutputPath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Custom directory path for converted files"
+                },
+                "hamlet.errors.warningLevel": {
+                    "type": "string",
+                    "enum": [
+                        "error",
+                        "warning",
+                        "info"
+                    ],
+                    "default": "warning",
+                    "description": "Level of warning for conversion issues"
+                },
+                "hamlet.errors.autoFix": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Automatically fix simple conversion issues"
+                },
+                "hamlet.errors.inlineWarnings": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show conversion warnings inline with code"
+                }
+            }
         },
-        {
-          "command": "hamlet.convertToCypress",
-          "key": "ctrl+shift+t c",
-          "mac": "cmd+shift+t c",
-          "when": "editorTextFocus"
-        },
-        {
-          "command": "hamlet.convertToTestRail",
-          "key": "ctrl+shift+t r",
-          "mac": "cmd+shift+t r",
-          "when": "editorTextFocus"
-        }
-      ],
-      "themes": [
-        {
-          "label": "Hamlet Color Theme",
-          "uiTheme": "vs-dark",
-          "path": "./themes/hamlet-color-theme.json"
-        }
-      ],
-      "grammars": [
-        {
-          "language": "javascript",
-          "scopeName": "source.hamlet",
-          "path": "./syntaxes/hamlet.tmLanguage.json"
-        }
-      ]
+        "keybindings": [
+            {
+                "command": "hamlet.convertToPlaywright",
+                "key": "ctrl+shift+t p",
+                "mac": "cmd+shift+t p",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "hamlet.convertToCypress",
+                "key": "ctrl+shift+t c",
+                "mac": "cmd+shift+t c",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "hamlet.convertToTestRail",
+                "key": "ctrl+shift+t r",
+                "mac": "cmd+shift+t r",
+                "when": "editorTextFocus"
+            }
+        ],
+        "themes": [
+            {
+                "label": "Hamlet Color Theme",
+                "uiTheme": "vs-dark",
+                "path": "./themes/hamlet-color-theme.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "javascript",
+                "scopeName": "source.hamlet",
+                "path": "./syntaxes/hamlet.tmLanguage.json"
+            }
+        ]
     },
     "scripts": {
-      "vscode:prepublish": "npm run compile",
-      "compile": "tsc -p ./",
-      "watch": "tsc -watch -p ./",
-      "pretest": "npm run compile && npm run lint",
-      "lint": "eslint src --ext ts",
-      "test": "node ./out/test/runTest.js"
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src/**/*.ts",
+        "test": "node ./out/test/runTest.js"
     },
     "devDependencies": {
-      "@types/glob": "^8.1.0",
-      "@types/mocha": "^10.0.10",
-      "@types/node": "^20.2.5",
-      "@types/vscode": "^1.96.0",
-      "@typescript-eslint/eslint-plugin": "^5.62.0",
-      "@typescript-eslint/parser": "^5.62.0",
-      "@vscode/test-electron": "^2.3.2",
-      "eslint": "^8.57.1",
-      "glob": "^8.1.0",
-      "mocha": "^10.8.2",
-      "prettier": "^3.4.2"
+        "@eslint/js": "^9.17.0",
+        "@types/glob": "^8.1.0",
+        "@types/mocha": "^10.0.10",
+        "@types/node": "^20.2.5",
+        "@types/vscode": "^1.96.0",
+        "@typescript-eslint/eslint-plugin": "^5.62.0",
+        "@typescript-eslint/parser": "^5.62.0",
+        "@vscode/test-electron": "^2.3.2",
+        "eslint": "^8.57.1",
+        "glob": "^8.1.0",
+        "globals": "^15.14.0",
+        "mocha": "^10.8.2",
+        "prettier": "^3.4.2",
+        "typescript-eslint": "^8.18.2"
     }
-  }
+}

@@ -5,8 +5,17 @@ type ASTNode = {
     children?: ASTNode[];
     parent?: ASTNode;
     body?: string;
-    params?: any[];
+    params?: unknown[];
 };
+
+/**
+ * Type definition for parsed block
+ */
+interface ParsedBlock {
+    type: 'suite' | 'test';
+    title: string;
+    body?: string;
+}
 
 export class ASTHelper {
     /**
@@ -47,7 +56,7 @@ export class ASTHelper {
     /**
      * Creates an AST node for an assertion
      */
-    static createAssertionNode(assertion: string, params: any[]): ASTNode {
+    static createAssertionNode(assertion: string, params: unknown[]): ASTNode {
         return {
             type: 'assertion',
             value: assertion,
@@ -119,7 +128,7 @@ export class ASTHelper {
     /**
      * Builds an AST from parsed test blocks
      */
-    static buildAST(blocks: any[]): ASTNode {
+    static buildAST(blocks: ParsedBlock[]): ASTNode {
         const root: ASTNode = {
             type: 'root',
             children: []
@@ -132,7 +141,7 @@ export class ASTHelper {
                 currentSuite = this.createSuiteNode(block.title);
                 root.children?.push(currentSuite);
             } else if (block.type === 'test' && currentSuite) {
-                const testNode = this.createTestNode(block.title, block.body);
+                const testNode = this.createTestNode(block.title, block.body || '');
                 currentSuite.children?.push(testNode);
             }
         });

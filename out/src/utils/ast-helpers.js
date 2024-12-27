@@ -114,7 +114,7 @@ class ASTHelper {
                 root.children?.push(currentSuite);
             }
             else if (block.type === 'test' && currentSuite) {
-                const testNode = this.createTestNode(block.title, block.body);
+                const testNode = this.createTestNode(block.title, block.body || '');
                 currentSuite.children?.push(testNode);
             }
         });

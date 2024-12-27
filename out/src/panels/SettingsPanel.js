@@ -36,7 +36,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SettingsPanel = void 0;
 const vscode = __importStar(require("vscode"));
 class SettingsPanel {
-    constructor(panel, _extensionUri) {
+    constructor(panel) {
         this._disposables = [];
         this._panel = panel;
         this._update();
@@ -61,7 +61,7 @@ class SettingsPanel {
             enableScripts: true,
             localResourceRoots: [extensionUri]
         });
-        SettingsPanel.currentPanel = new SettingsPanel(panel, extensionUri);
+        SettingsPanel.currentPanel = new SettingsPanel(panel);
     }
     _update() {
         this._panel.webview.html = this._getHtmlForWebview();
