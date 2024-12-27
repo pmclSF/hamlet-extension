@@ -173,9 +173,10 @@ class ASTHelper {
         switch (framework) {
             case 'cypress':
                 return `${hookType}(() => {\n${body}\n});`;
-            case 'playwright':
+            case 'playwright': {
                 const isEachHook = hookType.includes('Each');
                 return `test.${hookType}(async (${isEachHook ? '{ page }' : ''}) => {\n${body}\n});`;
+            }
             case 'testrail':
                 return `${hookType}(() => {\n${body}\n});`;
             default:

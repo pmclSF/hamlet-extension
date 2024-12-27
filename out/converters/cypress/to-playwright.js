@@ -13,20 +13,9 @@ class CypressToPlaywrightConverter extends base_converter_1.BaseConverter {
             'find': 'locator',
             'click': 'click',
             'type': 'fill',
-            'should': 'toHaveText', // Default mapping, will need context
             'check': 'check',
             'uncheck': 'uncheck',
             'select': 'selectOption'
-        };
-        this.assertionMappings = {
-            'be.visible': 'toBeVisible',
-            'be.hidden': 'toBeHidden',
-            'exist': 'toBeVisible',
-            'have.text': 'toHaveText',
-            'have.value': 'toHaveValue',
-            'be.checked': 'toBeChecked',
-            'be.disabled': 'toBeDisabled',
-            'be.enabled': 'toBeEnabled'
         };
     }
     parseTestCases() {
@@ -35,7 +24,7 @@ class CypressToPlaywrightConverter extends base_converter_1.BaseConverter {
         while ((match = cypress_patterns_1.cypressPatterns.testDefinition.exec(this.sourceCode)) !== null) {
             const title = match[2];
             const startIndex = match.index + match[0].length;
-            const testBody = this.extractTestBody(this.sourceCode.slice(startIndex));
+            const testBody = this.extractBody(this.sourceCode.slice(startIndex));
             testCases.push({
                 title,
                 body: testBody,
@@ -50,7 +39,7 @@ class CypressToPlaywrightConverter extends base_converter_1.BaseConverter {
         while ((match = cypress_patterns_1.cypressPatterns.suiteDefinition.exec(this.sourceCode)) !== null) {
             const title = match[2];
             const startIndex = match.index + match[0].length;
-            const suiteBody = this.extractSuiteBody(this.sourceCode.slice(startIndex));
+            const suiteBody = this.extractBody(this.sourceCode.slice(startIndex));
             suites.push({
                 title,
                 tests: this.parseTestCases(),
@@ -78,12 +67,37 @@ class CypressToPlaywrightConverter extends base_converter_1.BaseConverter {
             };
         }
         catch (error) {
-            return {
-                success: false,
-                convertedCode: '',
-                errors: [error.message]
-            };
+            return this.handleError(error);
         }
+    }
+    extractBody(code) {
+        let braceCount = 1;
+        let index = 0;
+        while (braceCount > 0 && index < code.length) {
+            if (code[index] === '{')
+                braceCount++;
+            if (code[index] === '}')
+                braceCount--;
+            index++;
+        }
+        return code.slice(0, index - 1);
+    }
+    extractAssertions(testBody) {
+        const assertions = [];
+        let match;
+        while ((match = cypress_patterns_1.cypressPatterns.assertion.exec(testBody)) !== null) {
+            assertions.push(match[1]);
+        }
+        return assertions;
+    }
+    extractHooks(code, pattern) {
+        const hooks = [];
+        let match;
+        while ((match = pattern.exec(code)) !== null) {
+            const hookBody = this.extractBody(code.slice(match.index + match[0].length));
+            hooks.push(hookBody);
+        }
+        return hooks;
     }
     convertSuite(suite) {
         let result = `test.describe('${suite.title}', () => {\n`;
@@ -113,51 +127,13 @@ class CypressToPlaywrightConverter extends base_converter_1.BaseConverter {
         Object.entries(this.commandMappings).forEach(([cypressCmd, playwrightCmd]) => {
             convertedBody = convertedBody.replace(new RegExp(`cy.${cypressCmd}\\(`, 'g'), `page.${playwrightCmd}(`);
         });
-        // Convert assertions
-        Object.entries(this.assertionMappings).forEach(([cypressAssert, playwrightAssert]) => {
-            convertedBody = convertedBody.replace(new RegExp(`should\\(['"\`]${cypressAssert}['"\`]\\)`, 'g'), `${playwrightAssert}()`);
-        });
         return `  test('${testCase.title}', async ({ page }) => {\n${convertedBody}  });\n\n`;
-    }
-    extractTestBody(code) {
-        // Extract code between opening and closing braces
-        let braceCount = 1;
-        let index = 0;
-        while (braceCount > 0 && index < code.length) {
-            if (code[index] === '{')
-                braceCount++;
-            if (code[index] === '}')
-                braceCount--;
-            index++;
-        }
-        return code.slice(0, index - 1);
-    }
-    extractSuiteBody(code) {
-        return this.extractTestBody(code);
-    }
-    extractHooks(code, pattern) {
-        const hooks = [];
-        let match;
-        while ((match = pattern.exec(code)) !== null) {
-            const hookBody = this.extractTestBody(code.slice(match.index + match[0].length));
-            hooks.push(hookBody);
-        }
-        return hooks;
-    }
-    extractAssertions(code) {
-        const assertions = [];
-        let match;
-        while ((match = cypress_patterns_1.cypressPatterns.assertion.exec(code)) !== null) {
-            assertions.push(match[1]);
-        }
-        return assertions;
     }
     convertHooks(hookType, hooks) {
         return hooks.map(hook => `  test.${hookType}(async ({ page }) => {\n${hook}  });\n\n`).join('');
     }
     generateWarnings() {
         const warnings = [];
-        // Check for unsupported Cypress features
         if (this.sourceCode.includes('cy.intercept(')) {
             warnings.push('Cypress intercept commands need manual conversion to Playwright route.fulfill()');
         }

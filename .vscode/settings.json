@@ -1,0 +1,13 @@
+{
+   "typescript.tsc.autoDetect": "on",
+   "typescript.preferences.importModuleSpecifier": "relative",
+   "typescript.preferences.autoImportFileExcludePatterns": ["**/node_modules/**"],
+   "eslint.validate": [
+       "javascript",
+       "javascriptreact",
+       "typescript"
+   ],
+   "editor.codeActionsOnSave": {
+       "source.fixAll.eslint": "always"
+   }
+}

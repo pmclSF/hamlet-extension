@@ -1,32 +1,31 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
         "target": "ES2020",
-        "outDir": "out",
-        "lib": ["ES2020"],
-        "sourceMap": true,
+        "module": "commonjs",
+        "lib": ["ES2020", "DOM"],
+        "outDir": "./out",
         "rootDir": ".",
         "strict": true,
-        "esModuleInterop": true,
-        "skipLibCheck": true,
-        "noImplicitAny": true,
-        "noImplicitThis": true,
-        "alwaysStrict": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,
-        "baseUrl": ".",
-        "paths": {
-            "*": ["node_modules/*"]
-        }
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "sourceMap": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "resolveJsonModule": true
     },
+    "include": [
+        "src/**/*",
+        "test/**/*"
+    ],
     "exclude": [
         "node_modules",
-        ".vscode-test"
-    ],
-    "include": [
-        "src/panels/**/*",        "src/**/*",
-        "test/**/*"
+        ".vscode-test",
+        "out/**/*"
     ]
-}
+ }

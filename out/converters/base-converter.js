@@ -5,14 +5,16 @@ class BaseConverter {
     constructor(sourceCode) {
         this.sourceCode = sourceCode;
     }
-    extractAssertion(line) {
-        return [];
-    }
-    convertAssertion(assertion) {
-        return '';
-    }
     sanitizeCode(code) {
         return code.trim();
+    }
+    handleError(error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        return {
+            success: false,
+            convertedCode: '',
+            errors: [errorMessage]
+        };
     }
 }
 exports.BaseConverter = BaseConverter;

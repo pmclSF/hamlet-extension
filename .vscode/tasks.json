@@ -1,0 +1,28 @@
+{
+   "version": "2.0.0",
+   "tasks": [
+       {
+           "type": "npm",
+           "script": "watch",
+           "problemMatcher": [
+               "$tsc-watch"
+           ],
+           "isBackground": true,
+           "group": {
+               "kind": "build",
+               "isDefault": true
+           },
+           "label": "npm: watch"
+       },
+       {
+           "type": "npm",
+           "script": "pretest",
+           "problemMatcher": [
+               "$tsc",
+               "$eslint-stylish"
+           ],
+           "group": "test",
+           "label": "npm: pretest"
+       }
+   ]
+}
