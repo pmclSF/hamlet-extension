@@ -1,0 +1,62 @@
+{
+    "name": "hamlet",
+    "displayName": "Hamlet",
+    "description": "To test, or not to test - converts between Cypress, Playwright, and TestRail test frameworks",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.85.0"
+    },
+    "categories": [
+        "Testing",
+        "Programming Languages"
+    ],
+    "activationEvents": [
+        "onLanguage:javascript",
+        "onLanguage:typescript"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "hamlet.convertToPlaywright",
+                "title": "Hamlet: Convert to Playwright"
+            },
+            {
+                "command": "hamlet.convertToCypress",
+                "title": "Hamlet: Convert to Cypress"
+            },
+            {
+                "command": "hamlet.convertToTestRail",
+                "title": "Hamlet: Convert to TestRail"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "lint": "eslint src --ext ts",
+        "test": "node ./out/test/runTest.js"
+    },
+    "devDependencies": {
+        "@types/glob": "^8.1.0",
+        "@types/mocha": "^10.0.10",
+        "@types/node": "^20.2.5",
+        "@types/vscode": "^1.96.0",
+        "@typescript-eslint/eslint-plugin": "^5.62.0",
+        "@typescript-eslint/parser": "^5.62.0",
+        "@vscode/test-electron": "^2.3.2",
+        "eslint": "^8.57.1",
+        "glob": "^8.1.0",
+        "mocha": "^10.8.2",
+        "prettier": "^3.4.2",
+        "typescript": "^5.7.2"
+    },
+    "directories": {
+        "test": "test"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC"
+}
