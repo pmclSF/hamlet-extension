@@ -1,52 +1,37 @@
-import * as path from 'path';
-import * as Mocha from 'mocha';
-import * as glob from 'glob';
+import path from 'path';
+import Mocha from 'mocha';
+import { promisify } from 'util';
+import { glob } from 'glob';
 
-export function run(): Promise<void> {
- const mocha = new Mocha({
-   ui: 'bdd',
-   color: true
- });
+export async function run(): Promise<void> {
+    const mocha = new Mocha({
+        ui: 'bdd',
+        color: true
+    });
 
- const testsRoot = path.resolve(__dirname);
+    const testsRoot = path.resolve(__dirname);
+    const globPromise = promisify(glob);
+    const files = await globPromise('**/**.test.js', { cwd: testsRoot });
+    
+    files.forEach((f: string) => mocha.addFile(path.resolve(testsRoot, f)));
 
- return new Promise((resolve, reject) => {
-   glob('**/**.test.js', { cwd: testsRoot }, (err, files) => {
-     if (err) {
-       return reject(err);
-     }
-
-     // Add test files
-     files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
-
-     try {
-       mocha.run(failures => {
-         if (failures > 0) {
-           reject(new Error(`${failures} tests failed.`));
-         } else {
-           resolve();
-         }
-       });
-     } catch (err) {
-       reject(err);
-     }
-   });
- });
+    return new Promise((resolve, reject) => {
+        try {
+            mocha.run((failures: number) => {
+                if (failures > 0) {
+                    reject(new Error(`${failures} tests failed.`));
+                } else {
+                    resolve();
+                }
+            });
+        } catch (err) {
+            reject(err);
+        }
+    });
 }
 
-// Import all test files
-import './extension.test';
-
-// Core tests
+// Import tests
 import './core/parser.test';
 import './core/astHelper.test';
-import './core/converter.test';
-
-// Feature tests  
-import './features/settings.test';
 import './features/highlighting.test';
-
-// Integration tests
-import './integration/concurrency.test';
 import './integration/security.test';
-import './integration/e2e.test';
