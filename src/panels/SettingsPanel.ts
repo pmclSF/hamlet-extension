@@ -3,13 +3,10 @@ import * as vscode from 'vscode';
 export class SettingsPanel {
     public static currentPanel: SettingsPanel | undefined;
     private readonly _panel: vscode.WebviewPanel;
-    private readonly _extensionUri: vscode.Uri;
     private _disposables: vscode.Disposable[] = [];
 
-    private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+    private constructor(panel: vscode.WebviewPanel, _extensionUri: vscode.Uri) {
         this._panel = panel;
-        this._extensionUri = extensionUri;
-
         this._update();
 
         this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
@@ -17,12 +14,12 @@ export class SettingsPanel {
             message => {
                 switch (message.command) {
                     case 'updateSetting':
-                        vscode.workspace.getConfiguration('hamlet').update(
+                        void vscode.workspace.getConfiguration('hamlet').update(
                             message.setting,
                             message.value,
                             vscode.ConfigurationTarget.Global
                         );
-                        return;
+                        break;
                 }
             },
             null,
@@ -54,12 +51,16 @@ export class SettingsPanel {
     }
 
     private _update() {
-        const webview = this._panel.webview;
-        this._panel.webview.html = this._getHtmlForWebview(webview);
+        this._panel.webview.html = this._getHtmlForWebview();
     }
 
-    private _getHtmlForWebview(webview: vscode.Webview) {
+    private _getHtmlForWebview(): string {
         const config = vscode.workspace.getConfiguration('hamlet');
+        const currentSource = config.get('frameworks.defaultSource');
+        const currentTarget = config.get('frameworks.defaultTarget');
+        const highlightingEnabled = config.get('highlighting.enabled');
+        const indentationType = config.get('codeStyle.indentation');
+        const quoteStyle = config.get('codeStyle.quoteStyle');
 
         return `<!DOCTYPE html>
         <html lang="en">
@@ -105,6 +106,17 @@ export class SettingsPanel {
                 button:hover {
                     background: var(--vscode-button-hoverBackground);
                 }
+                label {
+                    display: block;
+                    margin-bottom: 5px;
+                }
+                .keyboard-shortcut {
+                    background: var(--vscode-textBlockQuote-background);
+                    padding: 10px;
+                    margin-top: 5px;
+                    border-radius: 3px;
+                    font-family: monospace;
+                }
             </style>
         </head>
         <body>
@@ -113,18 +125,34 @@ export class SettingsPanel {
                 <div class="setting-item">
                     <label>Default Source Framework:</label>
                     <select id="defaultSource" onchange="updateSetting('frameworks.defaultSource', this.value)">
-                        <option value="cypress" \${config.get('frameworks.defaultSource') === 'cypress' ? 'selected' : ''}>Cypress</option>
-                        <option value="playwright" \${config.get('frameworks.defaultSource') === 'playwright' ? 'selected' : ''}>Playwright</option>
-                        <option value="testrail" \${config.get('frameworks.defaultSource') === 'testrail' ? 'selected' : ''}>TestRail</option>
+                        <option value="cypress" ${currentSource === 'cypress' ? 'selected' : ''}>Cypress</option>
+                        <option value="playwright" ${currentSource === 'playwright' ? 'selected' : ''}>Playwright</option>
+                        <option value="testrail" ${currentSource === 'testrail' ? 'selected' : ''}>TestRail</option>
                     </select>
                 </div>
                 <div class="setting-item">
                     <label>Default Target Framework:</label>
                     <select id="defaultTarget" onchange="updateSetting('frameworks.defaultTarget', this.value)">
-                        <option value="cypress" \${config.get('frameworks.defaultTarget') === 'cypress' ? 'selected' : ''}>Cypress</option>
-                        <option value="playwright" \${config.get('frameworks.defaultTarget') === 'playwright' ? 'selected' : ''}>Playwright</option>
-                        <option value="testrail" \${config.get('frameworks.defaultTarget') === 'testrail' ? 'selected' : ''}>TestRail</option>
+                        <option value="cypress" ${currentTarget === 'cypress' ? 'selected' : ''}>Cypress</option>
+                        <option value="playwright" ${currentTarget === 'playwright' ? 'selected' : ''}>Playwright</option>
+                        <option value="testrail" ${currentTarget === 'testrail' ? 'selected' : ''}>TestRail</option>
                     </select>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-title">Keyboard Shortcuts</div>
+                <div class="setting-item">
+                    <span>Convert to Playwright:</span>
+                    <div class="keyboard-shortcut">Ctrl/Cmd + Shift + T P</div>
+                </div>
+                <div class="setting-item">
+                    <span>Convert to Cypress:</span>
+                    <div class="keyboard-shortcut">Ctrl/Cmd + Shift + T C</div>
+                </div>
+                <div class="setting-item">
+                    <span>Convert to TestRail:</span>
+                    <div class="keyboard-shortcut">Ctrl/Cmd + Shift + T R</div>
                 </div>
             </div>
 
@@ -133,7 +161,7 @@ export class SettingsPanel {
                 <div class="setting-item">
                     <label>
                         <input type="checkbox" 
-                               \${config.get('highlighting.enabled') ? 'checked' : ''}
+                               ${highlightingEnabled ? 'checked' : ''}
                                onchange="updateSetting('highlighting.enabled', this.checked)">
                         Enable Test Highlighting
                     </label>
@@ -145,15 +173,15 @@ export class SettingsPanel {
                 <div class="setting-item">
                     <label>Indentation:</label>
                     <select onchange="updateSetting('codeStyle.indentation', this.value)">
-                        <option value="spaces" \${config.get('codeStyle.indentation') === 'spaces' ? 'selected' : ''}>Spaces</option>
-                        <option value="tabs" \${config.get('codeStyle.indentation') === 'tabs' ? 'selected' : ''}>Tabs</option>
+                        <option value="spaces" ${indentationType === 'spaces' ? 'selected' : ''}>Spaces</option>
+                        <option value="tabs" ${indentationType === 'tabs' ? 'selected' : ''}>Tabs</option>
                     </select>
                 </div>
                 <div class="setting-item">
                     <label>Quote Style:</label>
                     <select onchange="updateSetting('codeStyle.quoteStyle', this.value)">
-                        <option value="single" \${config.get('codeStyle.quoteStyle') === 'single' ? 'selected' : ''}>Single Quotes</option>
-                        <option value="double" \${config.get('codeStyle.quoteStyle') === 'double' ? 'selected' : ''}>Double Quotes</option>
+                        <option value="single" ${quoteStyle === 'single' ? 'selected' : ''}>Single Quotes</option>
+                        <option value="double" ${quoteStyle === 'double' ? 'selected' : ''}>Double Quotes</option>
                     </select>
                 </div>
             </div>

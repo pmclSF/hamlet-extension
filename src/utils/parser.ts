@@ -1,4 +1,4 @@
-import { TestCase, TestSuite } from '../types';
+import { TestSuite } from '../types';
 
 interface ParsedBlock {
     type: 'test' | 'suite' | 'hook';
@@ -239,6 +239,6 @@ export class TestParser {
             }
         };
 
-        return patterns[framework];
+        return patterns[framework as keyof typeof patterns] || patterns.cypress;
     }
 }
