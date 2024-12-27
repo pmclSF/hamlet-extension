@@ -1,0 +1,23 @@
+{
+  "name": "Hamlet Color Theme",
+  "type": "dark",
+  "colors": {
+    "editor.foreground": "#FFFFFF",
+    "editor.background": "#1E1E1E"
+  },
+  "tokenColors": [
+    {
+      "scope": "keyword.control.cypress",
+      "settings": {
+        "foreground": "#FF0000"
+      }
+    },
+    {
+      "scope": "keyword.control.playwright",
+      "settings": {
+        "foreground": "#FF0000"
+      }
+    }
+    // Add more token colors as needed
+  ]
+}

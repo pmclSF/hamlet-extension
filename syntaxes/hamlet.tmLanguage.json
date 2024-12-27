@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Hamlet",
+  "scopeName": "source.hamlet",
+  "patterns": [
+    {
+      "name": "keyword.control.cypress",
+      "match": "\\b(it|describe)\\b"
+    },
+    {
+      "name": "keyword.control.playwright",
+      "match": "\\b(test|expect)\\b"
+    }
+    // Add more patterns as needed
+  ]
+}
