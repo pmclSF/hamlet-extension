@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+console.log('Running tests in src/test/suite/extension.test.ts');
 const mocha_1 = require("mocha");
 const chai_1 = require("chai");
 (0, mocha_1.describe)('Extension Test Suite', () => {

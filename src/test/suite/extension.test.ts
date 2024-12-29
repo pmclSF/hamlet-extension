@@ -1,3 +1,4 @@
+console.log('Running tests in src/test/suite/extension.test.ts');
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
 

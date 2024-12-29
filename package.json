@@ -4,7 +4,7 @@
   "description": "",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.84.0"
+    "vscode": "^1.96.0"
   },
   "categories": [
     "Other"
@@ -20,16 +20,18 @@
     "watch": "tsc -watch -p ./",
     "pretest": "tsc -p ./",
     "lint": "eslint src/**/*.ts",
-    "test": "node ./out/src/test/runTest.js",
-    "test:unit": "mocha --config .mocharc.json \"test/**/*.test.ts\"",
+    "test": "node ./out/test/runTest.js",
+    "test:unit": "mocha --config .mocharc.json \"src/test/suite/**/*.test.ts\"",
     "test:integration": "mocha --config .mocharc.json \"test/**/*.test.ts\" --grep \"Integration\"",
     "test:compile": "tsc -p ./",
-    "test:watch": "tsc -watch -p ./"
+    "test:watch": "tsc -watch -p ./",
+    "test:converters": "mocha --config .mocharc.json \"src/test/suite/converters.test.ts\"",
+    "test:watch:converters": "mocha --config .mocharc.json \"src/test/suite/converters.test.ts\" --watch --watch-files src/converters/**/*.ts,src/test/suite/converters.test.ts"
   },
   "devDependencies": {
     "@types/chai": "^5.0.1",
     "@types/cypress": "^0.1.6",
-    "@types/glob": "^8.1.0",
+    "@types/glob": "^7.2.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^18.19.68",
     "@types/sinon": "^17.0.3",
@@ -37,15 +39,18 @@
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "@vscode/test-electron": "^2.4.1",
-    "chai": "^5.1.2",
     "cypress": "^13.17.0",
     "eslint": "^8.57.1",
     "glob": "^10.4.5",
+    "minimatch": "^5.1.6",
     "mocha": "^10.8.2",
     "sinon": "^19.0.2",
     "source-map-support": "^0.5.21",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.2"
+  },
+  "dependencies": {
+    "chai": "^4.5.0"
   }
 }

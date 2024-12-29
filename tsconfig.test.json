@@ -1,10 +1,31 @@
 {
-  "extends": "./tsconfig.json",
   "compilerOptions": {
     "module": "commonjs",
-    "types": ["mocha", "node", "chai"]
+    "target": "ES2020",
+    "outDir": "out",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "sourceMap": true,
+    "rootDir": "src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noImplicitAny": true,
+    "baseUrl": ".",
+    "types": [
+      "mocha",
+      "node",
+      "vscode"
+    ],
+    "typeRoots": [
+      "./node_modules/@types"
+    ]
   },
   "include": [
-    "test/**/*.ts"
+    "src/test/suite/converters.test.ts",
+    "src/test/global.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".vscode-test"
   ]
 }

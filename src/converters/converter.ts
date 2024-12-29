@@ -1,13 +1,16 @@
+import { CypressToPlaywrightConverter } from './cypress/to-playwright';
+import { PlaywrightToTestRailConverter } from './playwright/to-testrail';
+
 export class TestConverter {
     convertToPlaywright(source: string): string {
-        // Placeholder implementation
-        return source.replace('describe', 'test.describe')
-                    .replace('cy.visit', 'page.goto');
+        const converter = new CypressToPlaywrightConverter(source);
+        const result = converter.convertToTargetFramework();
+        return result.convertedCode;
     }
 
     convertToTestRail(source: string): string {
-        // Placeholder implementation
-        return source.replace('test.describe', 'suite')
-                    .replace('test(', 'testCase(');
+        const converter = new PlaywrightToTestRailConverter(source);
+        const result = converter.convertToTargetFramework();
+        return result.convertedCode;
     }
 }

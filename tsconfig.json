@@ -3,26 +3,27 @@
     "module": "commonjs",
     "target": "ES2020",
     "outDir": "out",
-    "lib": [
-      "ES2020",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "sourceMap": true,
-    "rootDir": ".",
+    "rootDir": "src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "noImplicitAny": true
+    "noImplicitAny": true,
+    "types": [
+      "node",        // Add Node.js types
+      "mocha",
+      "vscode"
+    ],
+    "typeRoots": [
+      "./node_modules/@types"
+    ]
   },
   "exclude": [
     "node_modules",
     ".vscode-test"
   ],
   "include": [
-    "src/**/*",
-    "test/**/*",
-    "src/test",
-    "test/suite/**/*.d.ts"
+    "src/**/*"
   ]
 }

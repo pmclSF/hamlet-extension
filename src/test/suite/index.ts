@@ -1,51 +1,41 @@
 import * as path from 'path';
-import Mocha from 'mocha';
-import { glob } from 'glob';
-import { promisify } from 'util';
+import Mocha = require('mocha');  // Fix the import style
 
 export async function run(): Promise<void> {
     // Create the mocha test
+    console.log('Creating Mocha instance...');
     const mocha = new Mocha({
         ui: 'bdd',
         color: true,
-        timeout: 60000
+        reporter: 'spec'
     });
 
-    const testsRoot = path.resolve(__dirname);
+    console.log('Setting up test file path...');
+    const testsRoot = __dirname;
     console.log('Tests root:', testsRoot);
 
+    // Add test file directly
+    const testFile = path.resolve(testsRoot, 'extension.test.js');
+    console.log('Adding test file:', testFile);
+    mocha.addFile(testFile);
+
     try {
-        // Define the type for glob promise
-        const globPromise = promisify<string, object, string[]>(glob);
-        
-        // Look for test files
-        const files = await globPromise('**/**.test.js', { cwd: testsRoot });
-        console.log('Found test files:', files);
-
-        // Add files to the test suite
-        for (const file of files) {
-            const filePath = path.resolve(testsRoot, file);
-            console.log('Adding test file:', filePath);
-            mocha.addFile(filePath);
-        }
-
-        // Run the mocha tests
+        console.log('Starting test run...');
         return new Promise<void>((resolve, reject) => {
-            try {
-                mocha.run((failures: number) => {
-                    if (failures > 0) {
-                        reject(new Error(`${failures} tests failed.`));
-                    } else {
-                        resolve();
-                    }
-                });
-            } catch (err) {
-                console.error('Error running tests:', err);
-                reject(err);
-            }
+            mocha.run((failures: number) => {  // Add type for failures
+                console.log('Test run completed with', failures, 'failures');
+                if (failures > 0) {
+                    reject(new Error(`${failures} tests failed.`));
+                } else {
+                    resolve();
+                }
+            });
         });
     } catch (err) {
-        console.error('Error loading test files:', err);
+        console.error('Error during test execution:', err);
         throw err;
     }
 }
+
+// Ensure module exports are correct
+exports.run = run;

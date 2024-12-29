@@ -58,10 +58,19 @@ export class CypressToPlaywrightConverter extends BaseConverter {
 
     convertToTargetFramework(): ConversionResult {
         try {
+            // Early return for non-test code
+            if (!this.sourceCode.includes('describe(') && !this.sourceCode.includes('it(')) {
+                return {
+                    success: true,
+                    convertedCode: this.sourceCode,
+                    warnings: []
+                };
+            }
+
             const suites = this.parseSuites();
             let convertedCode = '';
 
-            // Add Playwright imports
+            // Add Playwright imports only if we're converting test code
             convertedCode += "import { test, expect } from '@playwright/test';\n\n";
 
             for (const suite of suites) {
