@@ -1,56 +1,118 @@
 {
   "name": "hamlet",
-  "displayName": "hamlet",
-  "description": "",
+  "displayName": "Hamlet",
+  "description": "Test Framework Converter Extension",
   "version": "0.0.1",
+  "publisher": "hamlet",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/yourusername/hamlet.git"
+  },
   "engines": {
-    "vscode": "^1.96.0"
+      "vscode": "^1.84.0"
   },
   "categories": [
-    "Other"
+      "Testing",
+      "Programming Languages",
+      "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+      "onLanguage:javascript",
+      "onLanguage:typescript",
+      "onCommand:hamlet.convertToPlaywright",
+      "onCommand:hamlet.convertToCypress",
+      "onCommand:hamlet.convertToTestRail",
+      "onCommand:hamlet.detectFramework"
+  ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": []
+      "commands": [
+          {
+              "command": "hamlet.convertToPlaywright",
+              "title": "Hamlet: Convert to Playwright"
+          },
+          {
+              "command": "hamlet.convertToCypress",
+              "title": "Hamlet: Convert to Cypress"
+          },
+          {
+              "command": "hamlet.convertToTestRail",
+              "title": "Hamlet: Convert to TestRail"
+          },
+          {
+              "command": "hamlet.detectFramework",
+              "title": "Hamlet: Detect Test Framework"
+          }
+      ],
+      "menus": {
+          "editor/context": [
+              {
+                  "command": "hamlet.convertToPlaywright",
+                  "group": "hamlet",
+                  "when": "editorLangId =~ /javascript|typescript/"
+              },
+              {
+                  "command": "hamlet.convertToCypress",
+                  "group": "hamlet",
+                  "when": "editorLangId =~ /javascript|typescript/"
+              },
+              {
+                  "command": "hamlet.convertToTestRail",
+                  "group": "hamlet",
+                  "when": "editorLangId =~ /javascript|typescript/"
+              }
+          ]
+      },
+      "configuration": {
+          "title": "Hamlet",
+          "properties": {
+              "hamlet.indentation": {
+                  "type": "string",
+                  "enum": ["spaces", "tabs"],
+                  "default": "spaces",
+                  "description": "Use spaces or tabs for indentation"
+              },
+              "hamlet.quoteStyle": {
+                  "type": "string",
+                  "enum": ["single", "double"],
+                  "default": "single",
+                  "description": "Use single or double quotes"
+              }
+          }
+      }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "tsc -p ./",
-    "lint": "eslint src/**/*.ts",
-    "test": "node ./out/test/runTest.js",
-    "test:unit": "mocha --config .mocharc.json \"src/test/suite/**/*.test.ts\"",
-    "test:integration": "mocha --config .mocharc.json \"test/**/*.test.ts\" --grep \"Integration\"",
-    "test:compile": "tsc -p ./",
-    "test:watch": "tsc -watch -p ./",
-    "test:converters": "mocha --config .mocharc.json \"src/test/suite/converters.test.ts\"",
-    "test:watch:converters": "mocha --config .mocharc.json \"src/test/suite/converters.test.ts\" --watch --watch-files src/converters/**/*.ts,src/test/suite/converters.test.ts"
+      "vscode:prepublish": "npm run compile",
+      "compile": "tsc -p ./",
+      "watch": "tsc -watch -p ./",
+      "pretest": "npm run compile",
+      "lint": "eslint src --ext ts",
+      "test": "node ./out/test/runTest.js",
+      "test:unit": "mocha --require ts-node/register 'src/test/**/*.test.ts'",
+      "test:coverage": "nyc npm run test:unit"
   },
   "devDependencies": {
-    "@types/chai": "^5.0.1",
-    "@types/cypress": "^0.1.6",
-    "@types/glob": "^7.2.0",
-    "@types/mocha": "^10.0.10",
-    "@types/node": "^18.19.68",
-    "@types/sinon": "^17.0.3",
-    "@types/vscode": "^1.96.0",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
-    "@vscode/test-electron": "^2.4.1",
-    "cypress": "^13.17.0",
-    "eslint": "^8.57.1",
-    "glob": "^10.4.5",
-    "minimatch": "^5.1.6",
-    "mocha": "^10.8.2",
-    "sinon": "^19.0.2",
-    "source-map-support": "^0.5.21",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.7.2",
-    "typescript-eslint": "^8.18.2"
+      "@types/chai": "^4.3.9",
+      "@types/glob": "^8.1.0",
+      "@types/mocha": "^10.0.3",
+      "@types/node": "18.x",
+      "@types/sinon": "^10.0.20",
+      "@types/vscode": "^1.84.0",
+      "@typescript-eslint/eslint-plugin": "^6.9.0",
+      "@typescript-eslint/parser": "^6.9.0",
+      "@vscode/test-electron": "^2.3.6",
+      "chai": "^4.3.10",
+      "eslint": "^8.52.0",
+      "glob": "^10.3.10",
+      "mocha": "^10.2.0",
+      "nyc": "^15.1.0",
+      "sinon": "^17.0.1",
+      "ts-node": "^10.9.1",
+      "typescript": "^5.2.2"
   },
   "dependencies": {
-    "chai": "^4.5.0"
+      "vscode-languageclient": "^8.1.0"
   }
 }
