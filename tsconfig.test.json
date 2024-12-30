@@ -10,20 +10,22 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noImplicitAny": true,
+    "baseUrl": ".",
     "types": [
-      "node",        // Add Node.js types
       "mocha",
+      "node",
       "vscode"
     ],
     "typeRoots": [
       "./node_modules/@types"
     ]
   },
+  "include": [
+    "src/test/suite/converters.test.ts",
+    "src/test/global.d.ts"
+  ],
   "exclude": [
     "node_modules",
     ".vscode-test"
-  ],
-  "include": [
-    "src/**/*"
   ]
 }

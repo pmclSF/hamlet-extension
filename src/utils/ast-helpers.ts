@@ -5,8 +5,17 @@ type ASTNode = {
     children?: ASTNode[];
     parent?: ASTNode;
     body?: string;
-    params?: any[];
+    params?: unknown[];
 };
+
+/**
+ * Type definition for parsed block
+ */
+interface ParsedBlock {
+    type: 'suite' | 'test';
+    title: string;
+    body?: string;
+}
 
 export class ASTHelper {
     /**
@@ -47,7 +56,7 @@ export class ASTHelper {
     /**
      * Creates an AST node for an assertion
      */
-    static createAssertionNode(assertion: string, params: any[]): ASTNode {
+    static createAssertionNode(assertion: string, params: unknown[]): ASTNode {
         return {
             type: 'assertion',
             value: assertion,
@@ -119,7 +128,7 @@ export class ASTHelper {
     /**
      * Builds an AST from parsed test blocks
      */
-    static buildAST(blocks: any[]): ASTNode {
+    static buildAST(blocks: ParsedBlock[]): ASTNode {
         const root: ASTNode = {
             type: 'root',
             children: []
@@ -132,7 +141,7 @@ export class ASTHelper {
                 currentSuite = this.createSuiteNode(block.title);
                 root.children?.push(currentSuite);
             } else if (block.type === 'test' && currentSuite) {
-                const testNode = this.createTestNode(block.title, block.body);
+                const testNode = this.createTestNode(block.title, block.body || '');
                 currentSuite.children?.push(testNode);
             }
         });
@@ -158,10 +167,10 @@ export class ASTHelper {
         }
     }
 
-    private static generateSuiteCode(node: ASTNode, framework: string): string {
+    private static generateSuiteCode(node: ASTNode, framework: 'cypress' | 'playwright' | 'testrail'): string {
         const name = node.name || 'Untitled Suite';
         const childrenCode = node.children
-            ?.map(child => this.generateCode(child, framework as any))
+            ?.map(child => this.generateCode(child, framework))
             .join('\n\n') || '';
 
         switch (framework) {
@@ -176,7 +185,7 @@ export class ASTHelper {
         }
     }
 
-    private static generateTestCode(node: ASTNode, framework: string): string {
+    private static generateTestCode(node: ASTNode, framework: 'cypress' | 'playwright' | 'testrail'): string {
         const name = node.name || 'Untitled Test';
         const body = node.body || '';
 
@@ -192,16 +201,17 @@ export class ASTHelper {
         }
     }
 
-    private static generateHookCode(node: ASTNode, framework: string): string {
+    private static generateHookCode(node: ASTNode, framework: 'cypress' | 'playwright' | 'testrail'): string {
         const hookType = node.name || '';
         const body = node.body || '';
 
         switch (framework) {
             case 'cypress':
                 return `${hookType}(() => {\n${body}\n});`;
-            case 'playwright':
+            case 'playwright': {
                 const isEachHook = hookType.includes('Each');
                 return `test.${hookType}(async (${isEachHook ? '{ page }' : ''}) => {\n${body}\n});`;
+            }
             case 'testrail':
                 return `${hookType}(() => {\n${body}\n});`;
             default:
@@ -209,7 +219,7 @@ export class ASTHelper {
         }
     }
 
-    private static generateAssertionCode(node: ASTNode, framework: string): string {
+    private static generateAssertionCode(node: ASTNode, framework: 'cypress' | 'playwright' | 'testrail'): string {
         const assertion = node.value || '';
         const params = node.params || [];
 

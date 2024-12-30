@@ -5,7 +5,7 @@ export class SettingsPanel {
     private readonly _panel: vscode.WebviewPanel;
     private _disposables: vscode.Disposable[] = [];
 
-    private constructor(panel: vscode.WebviewPanel, _extensionUri: vscode.Uri) {
+    private constructor(panel: vscode.WebviewPanel) {
         this._panel = panel;
         this._update();
 
@@ -47,7 +47,7 @@ export class SettingsPanel {
             }
         );
 
-        SettingsPanel.currentPanel = new SettingsPanel(panel, extensionUri);
+        SettingsPanel.currentPanel = new SettingsPanel(panel);
     }
 
     private _update() {

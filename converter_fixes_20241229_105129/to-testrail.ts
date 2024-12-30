@@ -60,7 +60,7 @@ export class PlaywrightToTestRailConverter extends BaseConverter {
     convertToTargetFramework(): ConversionResult {
         try {
             let convertedCode = '';
-            convertedCode += `const { testCase, suite, step } = require('@testrail/api');\n\n`;
+            convertedCode += `const { test_case, suite, step } = require('@testrail/api');\n\n`;
 
             const suites = this.parseSuites();
             for (const suite of suites) {
@@ -139,7 +139,7 @@ export class PlaywrightToTestRailConverter extends BaseConverter {
     }
 
     private convertTestCase(testCase: TestCase): string {
-        let result = `  testCase('${testCase.title}', () => {\n`;
+        let result = `  test_case('${testCase.title}', () => {\n`;
         
         // Convert Playwright actions to TestRail steps
         const steps = this.extractPlaywrightActions(testCase.body);

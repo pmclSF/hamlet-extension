@@ -1,0 +1,53 @@
+# Compiled output
+/out/
+/dist/
+*.js.map
+
+# Node modules
+/node_modules/
+
+# VSCode directories
+.vscode/
+.vscode-test/
+
+# Backup files
+*_backup_*/
+test_backup_*/
+*_OLD/
+*.bak
+
+# Shell scripts
+*.sh
+
+# TypeScript compiled files
+*.js
+*.js.map
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Test coverage
+/coverage/
+
+# Temporary files
+*.swp
+*.swo
+*~
+
+# IDE specific files
+.idea/
+*.iml
+*.iws.vscode-test/
+.vscode-test/
