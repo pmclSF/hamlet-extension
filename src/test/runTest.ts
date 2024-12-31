@@ -16,10 +16,16 @@ async function main() {
         const testResults = await runTests({
             extensionDevelopmentPath,
             extensionTestsPath,
-            launchArgs: ['--disable-extensions'],
+            launchArgs: [
+                '--disable-gpu',
+                '--disable-extensions',
+                '--no-sandbox'
+            ],
             extensionTestsEnv: {
                 MOCHA_REPORTER: 'spec',
-                MOCHA_TIMEOUT: '60000'
+                MOCHA_TIMEOUT: '60000',
+                ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
+                ELECTRON_NO_ATTACH_CONSOLE: 'true'
             }
         });
 
