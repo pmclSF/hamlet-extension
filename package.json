@@ -7,112 +7,114 @@
   "private": true,
   "license": "MIT",
   "repository": {
-      "type": "git",
-      "url": "https://github.com/yourusername/hamlet.git"
+    "type": "git",
+    "url": "https://github.com/yourusername/hamlet.git"
   },
   "engines": {
-      "vscode": "^1.84.0"
+    "vscode": "^1.84.0"
   },
   "categories": [
-      "Testing",
-      "Programming Languages",
-      "Other"
+    "Testing",
+    "Programming Languages",
+    "Other"
   ],
   "activationEvents": [
-      "onLanguage:javascript",
-      "onLanguage:typescript",
-      "onCommand:hamlet.convertToPlaywright",
-      "onCommand:hamlet.convertToCypress",
-      "onCommand:hamlet.convertToTestRail",
-      "onCommand:hamlet.detectFramework"
+    "onLanguage:javascript",
+    "onLanguage:typescript"
   ],
   "main": "./out/extension.js",
   "contributes": {
-      "commands": [
-          {
-              "command": "hamlet.convertToPlaywright",
-              "title": "Hamlet: Convert to Playwright"
-          },
-          {
-              "command": "hamlet.convertToCypress",
-              "title": "Hamlet: Convert to Cypress"
-          },
-          {
-              "command": "hamlet.convertToTestRail",
-              "title": "Hamlet: Convert to TestRail"
-          },
-          {
-              "command": "hamlet.detectFramework",
-              "title": "Hamlet: Detect Test Framework"
-          }
-      ],
-      "menus": {
-          "editor/context": [
-              {
-                  "command": "hamlet.convertToPlaywright",
-                  "group": "hamlet",
-                  "when": "editorLangId =~ /javascript|typescript/"
-              },
-              {
-                  "command": "hamlet.convertToCypress",
-                  "group": "hamlet",
-                  "when": "editorLangId =~ /javascript|typescript/"
-              },
-              {
-                  "command": "hamlet.convertToTestRail",
-                  "group": "hamlet",
-                  "when": "editorLangId =~ /javascript|typescript/"
-              }
-          ]
+    "commands": [
+      {
+        "command": "hamlet.convertToPlaywright",
+        "title": "Hamlet: Convert to Playwright"
       },
-      "configuration": {
-          "title": "Hamlet",
-          "properties": {
-              "hamlet.indentation": {
-                  "type": "string",
-                  "enum": ["spaces", "tabs"],
-                  "default": "spaces",
-                  "description": "Use spaces or tabs for indentation"
-              },
-              "hamlet.quoteStyle": {
-                  "type": "string",
-                  "enum": ["single", "double"],
-                  "default": "single",
-                  "description": "Use single or double quotes"
-              }
-          }
+      {
+        "command": "hamlet.convertToCypress",
+        "title": "Hamlet: Convert to Cypress"
+      },
+      {
+        "command": "hamlet.convertToTestRail",
+        "title": "Hamlet: Convert to TestRail"
+      },
+      {
+        "command": "hamlet.detectFramework",
+        "title": "Hamlet: Detect Test Framework"
       }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "hamlet.convertToPlaywright",
+          "group": "hamlet",
+          "when": "editorLangId =~ /javascript|typescript/"
+        },
+        {
+          "command": "hamlet.convertToCypress",
+          "group": "hamlet",
+          "when": "editorLangId =~ /javascript|typescript/"
+        },
+        {
+          "command": "hamlet.convertToTestRail",
+          "group": "hamlet",
+          "when": "editorLangId =~ /javascript|typescript/"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Hamlet",
+      "properties": {
+        "hamlet.indentation": {
+          "type": "string",
+          "enum": [
+            "spaces",
+            "tabs"
+          ],
+          "default": "spaces",
+          "description": "Use spaces or tabs for indentation"
+        },
+        "hamlet.quoteStyle": {
+          "type": "string",
+          "enum": [
+            "single",
+            "double"
+          ],
+          "default": "single",
+          "description": "Use single or double quotes"
+        }
+      }
+    }
   },
   "scripts": {
-      "vscode:prepublish": "npm run compile",
-      "compile": "tsc -p ./",
-      "watch": "tsc -watch -p ./",
-      "pretest": "npm run compile",
-      "lint": "eslint src --ext ts",
-      "test": "node ./out/test/runTest.js",
-      "test:unit": "mocha --require ts-node/register 'src/test/**/*.test.ts'",
-      "test:coverage": "nyc npm run test:unit"
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "test:unit": "mocha --require ts-node/register 'src/test/**/*.test.ts'",
+    "test:coverage": "nyc npm run test:unit"
   },
   "devDependencies": {
-      "@types/chai": "^4.3.9",
-      "@types/glob": "^8.1.0",
-      "@types/mocha": "^10.0.3",
-      "@types/node": "18.x",
-      "@types/sinon": "^10.0.20",
-      "@types/vscode": "^1.84.0",
-      "@typescript-eslint/eslint-plugin": "^6.9.0",
-      "@typescript-eslint/parser": "^6.9.0",
-      "@vscode/test-electron": "^2.3.6",
-      "chai": "^4.3.10",
-      "eslint": "^8.52.0",
-      "glob": "^10.3.10",
-      "mocha": "^10.2.0",
-      "nyc": "^15.1.0",
-      "sinon": "^17.0.1",
-      "ts-node": "^10.9.1",
-      "typescript": "^5.2.2"
+    "@types/chai": "^4.3.9",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.3",
+    "@types/node": "18.x",
+    "@types/sinon": "^10.0.20",
+    "@types/vscode": "^1.96.0",
+    "@typescript-eslint/eslint-plugin": "^6.9.0",
+    "@typescript-eslint/parser": "^6.9.0",
+    "@vscode/test-electron": "^2.3.6",
+    "chai": "^4.3.10",
+    "eslint": "^8.52.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "nyc": "^15.1.0",
+    "sinon": "^17.0.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
   },
   "dependencies": {
-      "vscode-languageclient": "^8.1.0"
+    "vscode-languageclient": "^8.1.0"
   }
 }
