@@ -41,7 +41,7 @@ describe("Error Handling and Edge Cases", () => {
             const converter = new CypressToPlaywrightConverter(source);
             const result = converter.convertToTargetFramework();
             assert.ok(result.success, "Should succeed even with unsupported commands");
-            assert.ok(result.warnings.length > 0, "Should include warnings");
+            assert.ok(result.warnings && result.warnings.length > 0, "Should include warnings");
         });
     });
 });
