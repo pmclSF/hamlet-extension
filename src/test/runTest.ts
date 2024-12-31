@@ -16,10 +16,7 @@ async function main() {
         const testResults = await runTests({
             extensionDevelopmentPath,
             extensionTestsPath,
-            launchArgs: [
-                '--disable-gpu',
-                '--headless'
-            ],
+            launchArgs: ['--disable-extensions'],
             extensionTestsEnv: {
                 MOCHA_REPORTER: 'spec',
                 MOCHA_TIMEOUT: '60000'
