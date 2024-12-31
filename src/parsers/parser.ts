@@ -2,9 +2,17 @@ import { ParsedBlock } from '../types/index';
 
 export class TestParser {
     private source: string;
+    private debugMode: boolean;
 
-    constructor(source: string) {
+    constructor(source: string, debug: boolean = false) {
         this.source = source;
+        this.debugMode = debug;
+    }
+
+    private log(...args: any[]) {
+        if (this.debugMode) {
+            console.log(...args);
+        }
     }
 
     detectFramework(): 'cypress' | 'playwright' | 'testrail' | null {
@@ -22,6 +30,8 @@ export class TestParser {
             bodyLines: string[];
             bracketCount: number;
         }> = [];
+
+        this.log('Starting parse...');
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
@@ -76,6 +86,7 @@ export class TestParser {
                     blocks.push(block);
                 }
             }
+
             // Add line to all active blocks
             blockStack.forEach(item => {
                 item.bodyLines.push(line);
@@ -100,18 +111,26 @@ export class TestParser {
             item.block.endLine = lines.length;
         });
 
-        // Debug logging
-        console.log(`Parsed ${blocks.length} blocks`);
+        if (this.debugMode) {
+            this.logParseResults(blocks);
+        }
+
+        return blocks;
+    }
+
+    private logParseResults(blocks: ParsedBlock[]) {
+        this.log('\nParse Results:');
+        this.log(`Total blocks: ${blocks.length}`);
+        
         if (blocks.length > 0) {
-            console.log('First block:', {
+            this.log('\nFirst Block:');
+            this.log({
                 type: blocks[0].type,
                 title: blocks[0].title,
                 startLine: blocks[0].startLine,
                 endLine: blocks[0].endLine,
-                bodyPreview: blocks[0].body.substring(0, 100)
+                bodyPreview: blocks[0].body.slice(0, 100) + (blocks[0].body.length > 100 ? '...' : '')
             });
         }
-
-        return blocks;
     }
 }
