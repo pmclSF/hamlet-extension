@@ -17,79 +17,103 @@ export class TestParser {
     parseBlocks(): ParsedBlock[] {
         const blocks: ParsedBlock[] = [];
         const lines = this.source.split('\n');
-        let currentBlock: ParsedBlock | null = null;
-        let currentBody: string[] = [];
-        let blockDepth = 0;
+        const blockStack: { block: ParsedBlock; indent: number }[] = [];
+        
+        let currentIndent = 0;
 
         for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
+            const line = lines[i];
+            const trimmedLine = line.trim();
+            
+            // Skip empty lines
+            if (!trimmedLine) {
+                continue;
+            }
 
-            // Handle describe blocks (suites)
-            if (line.includes('describe(')) {
-                const titleMatch = line.match(/describe\(['"](.+?)['"]/);
+            // Calculate indentation level
+            currentIndent = line.length - trimmedLine.length;
+
+            // Handle block starts
+            if (trimmedLine.startsWith('describe(')) {
+                const titleMatch = trimmedLine.match(/describe\(['"](.+?)['"]/);
                 if (titleMatch) {
-                    currentBlock = {
+                    const block: ParsedBlock = {
                         type: 'suite',
                         title: titleMatch[1],
-                        body: '',
+                        body: line,
                         startLine: i + 1,
-                        endLine: -1 // Will be updated when block ends
+                        endLine: -1
                     };
-                    currentBody = [line];
-                    blockDepth++;
+                    blockStack.push({ block, indent: currentIndent });
+                    blocks.push(block);
                 }
             }
-
-            // Handle test blocks
-            else if (line.includes('it(')) {
-                const titleMatch = line.match(/it\(['"](.+?)['"]/);
+            else if (trimmedLine.startsWith('it(')) {
+                const titleMatch = trimmedLine.match(/it\(['"](.+?)['"]/);
                 if (titleMatch) {
-                    currentBlock = {
+                    const block: ParsedBlock = {
                         type: 'test',
                         title: titleMatch[1],
-                        body: '',
+                        body: line,
                         startLine: i + 1,
                         endLine: -1
                     };
-                    currentBody = [line];
-                    blockDepth++;
+                    blockStack.push({ block, indent: currentIndent });
+                    blocks.push(block);
                 }
             }
-
-            // Handle hooks (before, after, beforeEach, afterEach)
-            else if (line.match(/^(before|after|beforeEach|afterEach)\(/)) {
-                const hookMatch = line.match(/(before|after|beforeEach|afterEach)/);
-                if (hookMatch) {
-                    currentBlock = {
+            else if (trimmedLine.match(/^(before|after|beforeEach|afterEach)\(/)) {
+                const titleMatch = trimmedLine.match(/(before|after|beforeEach|afterEach)/);
+                if (titleMatch) {
+                    const block: ParsedBlock = {
                         type: 'hook',
-                        title: hookMatch[1],
-                        body: '',
+                        title: titleMatch[1],
+                        body: line,
                         startLine: i + 1,
                         endLine: -1
                     };
-                    currentBody = [line];
-                    blockDepth++;
+                    blockStack.push({ block, indent: currentIndent });
+                    blocks.push(block);
                 }
             }
 
-            // Collect body content
-            if (currentBlock && currentBody) {
-                if (blockDepth > 0 && i > currentBlock.startLine - 1) {
-                    currentBody.push(line);
-                }
+            // Add content to current block
+            if (blockStack.length > 0) {
+                const currentBlock = blockStack[blockStack.length - 1].block;
+                currentBlock.body += '\n' + line;
             }
 
             // Handle block endings
-            if (line.includes('});') || line.includes('}));')) {
-                blockDepth--;
-                if (blockDepth === 0 && currentBlock && currentBody) {
-                    currentBlock.endLine = i + 1;
-                    currentBlock.body = currentBody.join('\n');
-                    blocks.push(currentBlock);
-                    currentBlock = null;
-                    currentBody = [];
+            if (trimmedLine.includes('});')) {
+                while (blockStack.length > 0) {
+                    const lastBlock = blockStack[blockStack.length - 1];
+                    if (currentIndent <= lastBlock.indent) {
+                        lastBlock.block.endLine = i + 1;
+                        blockStack.pop();
+                    } else {
+                        break;
+                    }
                 }
             }
+        }
+
+        // Close any remaining blocks
+        blockStack.forEach(({ block }) => {
+            if (block.endLine === -1) {
+                block.endLine = lines.length;
+            }
+        });
+
+        // Debug logging
+        console.log(`Parsed ${blocks.length} blocks`);
+        if (blocks.length > 0) {
+            console.log('First block:', {
+                type: blocks[0].type,
+                title: blocks[0].title,
+                startLine: blocks[0].startLine,
+                endLine: blocks[0].endLine,
+                bodyPreview: blocks[0].body.substring(0, 100)
+            });
         }
 
         return blocks;
