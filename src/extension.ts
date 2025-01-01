@@ -4,6 +4,7 @@ import { PlaywrightToTestRailConverter } from './converters/playwright/to-testra
 import { TestRailToCypressConverter } from './converters/testrail/to-cypress';
 import { TestParser } from './parsers/parser';
 import { ConversionResult } from './types';
+import { PlaywrightToCypressConverter } from './converters/playwright/to-cypress';
 
 interface IConverter {
     convertToTargetFramework(): ConversionResult;
@@ -74,7 +75,8 @@ export function activate(context: vscode.ExtensionContext) {
             const framework = parser.detectFramework();
 
             if (framework === 'playwright') {
-                const converter = new CypressToPlaywrightConverter(sourceCode);
+                // Fix: Use PlaywrightToCypressConverter instead of CypressToPlaywrightConverter
+                const converter = new PlaywrightToCypressConverter(sourceCode);
                 await handleConversion(converter, editor);
             } else {
                 throw new Error('Current file is not a supported test file');
@@ -121,6 +123,10 @@ async function handleConversion(converter: IConverter, editor: vscode.TextEditor
     try {
         const result = converter.convertToTargetFramework();
         
+        if (!result.success) {
+            throw new Error(result.errors?.join('\n') || 'Conversion failed');
+        }
+
         if (result.warnings?.length) {
             result.warnings.forEach((warning: string) => {
                 outputChannel.appendLine(`Warning: ${warning}`);
