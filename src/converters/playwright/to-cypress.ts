@@ -15,28 +15,26 @@ export class PlaywrightToCypressConverter extends BaseConverter {
 
     convertToTargetFramework(): ConversionResult {
         try {
-            let convertedCode = this.sourceCode;
+            // Store the original source for error cases
+            const originalSource = this.sourceCode;
+            
+            // Remove Playwright imports first
+            let convertedCode = this.sourceCode
+                .replace(/import\s*{[^}]*}\s*from\s*['"]@playwright\/test['"];?\s*/g, '');
     
-            // First, remove Playwright imports
+            // Convert describe blocks
             convertedCode = convertedCode.replace(
-                /import\s*{[^}]*}\s*from\s*['"]@playwright\/test['"];?\s*/g,
-                ''
-            );
-    
-            // Convert test.describe blocks first
-            convertedCode = convertedCode.replace(
-                /test\.describe\s*\(\s*(['"])(.*?)\1\s*,\s*\(\s*\)\s*=>\s*{([\s\S]*?)}\s*\)\s*;?\s*$/gm,
-                (_, quote, title, content) => {
-                    return `describe(${quote}${title}${quote}, () => {${content}});`;
-                }
-            );
-    
-            // Then convert individual test blocks
-            convertedCode = convertedCode.replace(
-                /test\s*\(\s*(['"])(.*?)\1\s*,\s*async\s*\(\{\s*page\s*\}\)\s*=>\s*{([\s\S]*?)}\s*\)\s*;?\s*$/gm,
-                (_, quote, title, body) => {
-                    const convertedBody = this.convertTestBody(body);
-                    return `it(${quote}${title}${quote}, () => {${convertedBody}});`;
+                /test\.describe\s*\(\s*(['"`])(.*?)\1\s*,\s*(?:\(\s*\)\s*=>\s*)?{([\s\S]*?)}\s*\)/g,
+                (_match: string, quote: string, title: string, content: string) => {
+                    // Process the content to handle nested tests
+                    let processedContent = content.replace(
+                        /test\s*\(\s*(['"`])(.*?)\1\s*,\s*async\s*\(\{\s*page\s*\}\)\s*=>\s*{([\s\S]*?)}\s*\)/g,
+                        (_: string, innerQuote: string, testTitle: string, testBody: string) => {
+                            const convertedBody = this.convertTestBody(testBody);
+                            return `it(${innerQuote}${testTitle}${innerQuote}, () => {${convertedBody}})`;
+                        }
+                    );
+                    return `describe(${quote}${title}${quote}, () => {${processedContent}})`;
                 }
             );
     
@@ -45,11 +43,28 @@ export class PlaywrightToCypressConverter extends BaseConverter {
                 convertedCode = `/// <reference types="cypress" />\n\n${convertedCode}`;
             }
     
-            // Clean up whitespace and formatting
+            // Clean up formatting
             convertedCode = convertedCode
-                .replace(/\n\s*\n\s*\n/g, '\n\n')  // Remove extra blank lines
-                .replace(/[;\s]+$/, '')             // Remove trailing semicolons and spaces
-                .trim() + '\n';                     // Ensure single trailing newline
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+                .join('\n');
+    
+            // Validate conversion
+            if (!convertedCode.includes('describe(') || !convertedCode.includes('it(')) {
+                console.warn('Conversion validation failed:', {
+                    hasDescribe: convertedCode.includes('describe('),
+                    hasIt: convertedCode.includes('it('),
+                    original: originalSource,
+                    converted: convertedCode
+                });
+                return {
+                    success: false,
+                    convertedCode: originalSource,
+                    errors: ['Failed to convert test structure'],
+                    warnings: ['Test structure conversion failed']
+                };
+            }
     
             return {
                 success: true,
@@ -57,6 +72,7 @@ export class PlaywrightToCypressConverter extends BaseConverter {
                 warnings: this.generateWarnings()
             };
         } catch (error: unknown) {
+            console.error('Conversion error:', error);
             return this.handleError(error);
         }
     }
@@ -64,56 +80,33 @@ export class PlaywrightToCypressConverter extends BaseConverter {
     private convertTestBody(body: string): string {
         let convertedBody = body.trim();
     
-        // Convert Playwright commands to Cypress commands
-        const conversions = [
-            // Convert chained locator commands
-            {
-                from: /await\s+page\.locator\(['"]([^'"]+)['"]\)\.(\w+)\(\)/g,
-                to: (match: string, selector: string, action: string) => 
-                    `cy.get('${selector}').${action}()`
-            },
-            // Convert page.goto
+        // Convert page actions
+        const conversions: Array<{ from: RegExp; to: string }> = [
             {
                 from: /await\s+page\.goto\(['"]([^'"]+)['"]\)/g,
-                to: (match: string, url: string) => 
-                    `cy.visit('${url}')`
+                to: "cy.visit('$1')"
             },
-            // Convert page.click
             {
                 from: /await\s+page\.click\(['"]([^'"]+)['"]\)/g,
-                to: (match: string, selector: string) => 
-                    `cy.get('${selector}').click()`
+                to: "cy.get('$1').click()"
             },
-            // Convert other page actions
             {
-                from: /await\s+page\.(\w+)\(['"]([^'"]+)['"]\)/g,
-                to: (match: string, action: string, selector: string) => {
-                    const cypressCmd = this.actionMappings[action] || action;
-                    return `cy.${cypressCmd}('${selector}')`;
-                }
-            },
-            // Convert expectations
-            {
-                from: /expect\((.*?)\)\.(\w+)\((.*?)\)/g,
-                to: (match: string, target: string, assertion: string, args: string) => {
-                    const cypressAssertion = this.convertAssertion(assertion);
-                    return `cy.get(${target}).should('${cypressAssertion}'${args ? `, ${args}` : ''})`;
-                }
-            },
-            // Remove remaining awaits
-            {
-                from: /await\s+/g,
-                to: ''
+                from: /await\s+page\.locator\(['"]([^'"]+)['"]\)\.click\(\)/g,
+                to: "cy.get('$1').click()"
             }
         ];
     
-        // Apply all conversions
+        // Apply conversions
         conversions.forEach(({ from, to }) => {
-            convertedBody = convertedBody.replace(from, to as any);
+            convertedBody = convertedBody.replace(from, to);
         });
     
-        // Properly indent the converted body
-        return convertedBody.split('\n')
+        // Remove any remaining awaits
+        convertedBody = convertedBody.replace(/await\s+/g, '');
+    
+        // Add indentation
+        return convertedBody
+            .split('\n')
             .map(line => line.trim())
             .filter(line => line.length > 0)
             .map(line => `    ${line}`)

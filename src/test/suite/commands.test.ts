@@ -63,7 +63,7 @@ describe("Command Tests", () => {
         
         const doc = await openTestDocument(`
             import { test, expect } from '@playwright/test';
-    
+
             test.describe("Test Suite", () => {
                 test("should visit page", async ({ page }) => {
                     await page.goto("/test");
@@ -72,15 +72,17 @@ describe("Command Tests", () => {
             });
         `.trim());
         documents.push(doc);
-    
+
+        console.log('Before conversion:', doc.getText());
+        
         await vscode.window.showTextDocument(doc, { preview: false });
         await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
         await executeCommandWithRetry("hamlet.convertToCypress");
-    
-        const text = doc.getText();
         
-        // More specific assertions
+        const text = doc.getText();
+        console.log('After conversion:', text);
+        
         assert.match(
             text,
             /describe\(['"]Test Suite['"]/,
