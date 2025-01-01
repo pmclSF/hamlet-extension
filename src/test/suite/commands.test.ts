@@ -62,47 +62,40 @@ describe("Command Tests", () => {
         this.timeout(10000);
         
         const doc = await openTestDocument(`
-            import { test, expect } from '@playwright/test';
-
-            test.describe("Test Suite", () => {
-                test("should visit page", async ({ page }) => {
-                    await page.goto("/test");
-                    await page.click(".button");
-                });
-            });
-        `.trim());
+    import { test, expect } from '@playwright/test';
+    
+    test.describe("Test Suite", () => {
+        test("should visit page", async ({ page }) => {
+            await page.goto("/test");
+            await page.click(".button");
+        });
+    });`.trim());
+        
         documents.push(doc);
-
+    
         console.log('Before conversion:', doc.getText());
         
         await vscode.window.showTextDocument(doc, { preview: false });
         await new Promise(resolve => setTimeout(resolve, 1000));
-
+    
         await executeCommandWithRetry("hamlet.convertToCypress");
         
         const text = doc.getText();
         console.log('After conversion:', text);
-        
-        assert.match(
-            text,
-            /describe\(['"]Test Suite['"]/,
-            "Should have describe block"
-        );
-        assert.match(
-            text,
-            /it\(['"]should visit page['"]/,
-            "Should have it block"
-        );
-        assert.match(
-            text,
-            /cy\.visit\(['"]\/test['"]\)/,
-            "Should convert page.goto to cy.visit"
-        );
-        assert.match(
-            text,
-            /cy\.get\(['"]\.button['"]\)\.click\(\)/,
-            "Should convert page.click to cy.get().click()"
-        );
+    
+        // More specific assertions
+        [
+            ['/// <reference types="cypress" />', 'Should have Cypress reference'],
+            ['describe(\'Test Suite\'', 'Should have describe block'],
+            ['it(\'should visit page\'', 'Should have it block'],
+            ['cy.visit(\'/test\')', 'Should have cy.visit command'],
+            ['cy.get(\'.button\').click()', 'Should have cy.get command']
+        ].forEach(([expected, message]) => {
+            assert.ok(
+                text.includes(expected),
+                `${message}\nExpected to find: ${expected}\nIn:\n${text}`
+            );
+        });
     });
 
     it("handles invalid input gracefully", async function() {

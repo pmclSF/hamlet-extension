@@ -15,60 +15,65 @@ export class PlaywrightToCypressConverter extends BaseConverter {
 
     convertToTargetFramework(): ConversionResult {
         try {
-            // First convert the content, then handle imports
-            let convertedCode = this.sourceCode;
+            // First, normalize line endings and remove extra whitespace
+            let convertedCode = this.sourceCode.replace(/\r\n/g, '\n').trim();
     
-            // Store all matches before replacing
-            const testMatches: Array<{
-                title: string;
-                body: string;
-                full: string;
-            }> = [];
-    
-            // Find all test blocks first
-            const testRegex = /test\s*\(\s*(['"`])(.*?)\1\s*,\s*async\s*\(\{\s*page\s*\}\)\s*=>\s*{([\s\S]*?)}\)/g;
-            let match;
-            while ((match = testRegex.exec(this.sourceCode)) !== null) {
-                testMatches.push({
-                    title: match[2],
-                    body: match[3],
-                    full: match[0]
-                });
-            }
-    
-            // Convert each test block
-            testMatches.forEach(({ title, body, full }) => {
-                const convertedBody = this.convertTestBody(body);
-                const converted = `it('${title}', () => {${convertedBody}})`;
-                convertedCode = convertedCode.replace(full, converted);
-            });
-    
-            // Convert test.describe to describe
-            convertedCode = convertedCode.replace(
-                /test\.describe\s*\(\s*(['"`])(.*?)\1\s*,\s*(?:\(\s*\)\s*=>\s*)?{/g,
-                'describe($1$2$1, () => {'
-            );
-    
-            // Remove Playwright imports
-            convertedCode = convertedCode.replace(
-                /import\s*{[^}]*}\s*from\s*['"]@playwright\/test['"];?\s*/g,
-                ''
-            );
-    
+            // Create an array to store the converted lines
+            const lines: string[] = [];
+            
             // Add Cypress types reference
-            if (!convertedCode.includes('/// <reference')) {
-                convertedCode = `/// <reference types="cypress" />\n\n${convertedCode}`;
+            lines.push('/// <reference types="cypress" />');
+            lines.push('');
+    
+            // Split into blocks
+            const blocks = convertedCode.split(/test\.describe/);
+            
+            // Process each block
+            for (let i = 1; i < blocks.length; i++) { // Start from 1 to skip initial content
+                const block = blocks[i];
+                
+                // Extract describe block details
+                const describeMatch = block.match(/\(\s*['"`](.*?)['"`]\s*,\s*(?:\(\s*\)\s*=>\s*)?{([\s\S]*)/);
+                
+                if (describeMatch) {
+                    const [_, title, content] = describeMatch;
+                    
+                    // Start describe block
+                    lines.push(`describe('${title}', () => {`);
+                    
+                    // Convert test blocks
+                    const testBlocks = content.match(/test\(\s*['"`](.*?)['"`]\s*,\s*async\s*\(\{\s*page\s*\}\)\s*=>\s*{([\s\S]*?)\}\s*\)/g) || [];
+                    
+                    testBlocks.forEach(testBlock => {
+                        const testMatch = testBlock.match(/test\(\s*['"`](.*?)['"`]\s*,\s*async\s*\(\{\s*page\s*\}\)\s*=>\s*{([\s\S]*?)\}\s*\)/);
+                        if (testMatch) {
+                            const [__, testTitle, testBody] = testMatch;
+                            const convertedBody = this.convertTestBody(testBody);
+                            lines.push(`  it('${testTitle}', () => {`);
+                            lines.push(convertedBody);
+                            lines.push('  });');
+                        }
+                    });
+                    
+                    // Close describe block
+                    lines.push('});');
+                    lines.push('');
+                }
             }
     
-            // Format the code
-            convertedCode = this.formatCode(convertedCode);
+            // Join all lines
+            convertedCode = lines.join('\n');
     
             // Validate conversion
-            if (!convertedCode.includes('describe(') || !convertedCode.includes('it(')) {
+            const hasDescribe = convertedCode.includes('describe(');
+            const hasIt = convertedCode.includes('it(');
+    
+            if (!hasDescribe || !hasIt) {
                 console.warn('Conversion validation failed:', {
-                    hasDescribe: convertedCode.includes('describe('),
-                    hasIt: convertedCode.includes('it('),
-                    converted: convertedCode
+                    input: this.sourceCode,
+                    output: convertedCode,
+                    hasDescribe,
+                    hasIt
                 });
                 throw new Error('Failed to convert test structure');
             }
@@ -87,55 +92,40 @@ export class PlaywrightToCypressConverter extends BaseConverter {
     private convertTestBody(body: string): string {
         let convertedBody = body.trim();
     
-        // Convert page actions
-        const conversions: Array<{ from: RegExp; to: string }> = [
+        // Convert Playwright commands to Cypress commands
+        const conversions = [
             {
                 from: /await\s+page\.goto\(['"]([^'"]+)['"]\)/g,
-                to: "cy.visit('$1')"
+                to: "    cy.visit('$1');"
             },
             {
                 from: /await\s+page\.click\(['"]([^'"]+)['"]\)/g,
-                to: "cy.get('$1').click()"
+                to: "    cy.get('$1').click();"
             },
             {
                 from: /await\s+page\.locator\(['"]([^'"]+)['"]\)\.click\(\)/g,
-                to: "cy.get('$1').click()"
+                to: "    cy.get('$1').click();"
             },
             {
-                from: /await\s+page\.fill\(['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\)/g,
-                to: "cy.get('$1').type('$2')"
+                from: /await\s+page\.type\(['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\)/g,
+                to: "    cy.get('$1').type('$2');"
             }
         ];
     
-        // Apply conversions
+        // Apply each conversion
         conversions.forEach(({ from, to }) => {
             convertedBody = convertedBody.replace(from, to);
         });
     
-        // Remove any remaining awaits
-        convertedBody = convertedBody.replace(/await\s+/g, '');
-    
-        // Add indentation
-        return `\n${this.indentLines(convertedBody)}\n`;
-    }
-    
-    private formatCode(code: string): string {
-        return code
+        // Remove leftover awaits and blank lines
+        convertedBody = convertedBody
+            .replace(/await\s+/g, '')
             .split('\n')
             .map(line => line.trim())
             .filter(line => line.length > 0)
-            .join('\n')
-            .replace(/\n{3,}/g, '\n\n') // Remove extra blank lines
-            .trim() + '\n';
-    }
-    
-    private indentLines(text: string): string {
-        return text
-            .split('\n')
-            .map(line => line.trim())
-            .filter(line => line.length > 0)
-            .map(line => `    ${line}`)
             .join('\n');
+    
+        return convertedBody;
     }
 
     parseTestCases(): TestCase[] {
@@ -233,27 +223,23 @@ export class PlaywrightToCypressConverter extends BaseConverter {
     }
 
     private generateWarnings(): string[] {
-        const potentialIssues = [
+        const warningPatterns = [
             {
                 pattern: 'route.fulfill',
-                message: 'Playwright route.fulfill() needs manual conversion to cy.intercept()'
+                message: 'Network interception needs manual conversion to cy.intercept()'
             },
             {
                 pattern: 'waitForLoadState',
-                message: 'Consider replacing waitForLoadState with appropriate Cypress commands'
+                message: 'waitForLoadState needs conversion to appropriate Cypress wait command'
             },
             {
-                pattern: 'context.',
-                message: 'Browser context management needs manual conversion for Cypress'
-            },
-            {
-                pattern: 'expect(',
-                message: 'Some assertions might need manual adjustment for Cypress syntax'
+                pattern: 'page.evaluate',
+                message: 'page.evaluate needs conversion to cy.window() or cy.invoke()'
             }
         ];
-
-        return potentialIssues
-            .filter(issue => this.sourceCode.includes(issue.pattern))
-            .map(issue => issue.message);
+    
+        return warningPatterns
+            .filter(({ pattern }) => this.sourceCode.includes(pattern))
+            .map(({ message }) => message);
     }
 }
