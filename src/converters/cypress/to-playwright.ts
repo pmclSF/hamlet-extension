@@ -202,16 +202,28 @@ export class CypressToPlaywrightConverter extends BaseConverter {
     private generateWarnings(): string[] {
         const warnings: string[] = [];
         
+        // Extract all Cypress commands
+        const cypressCommands = this.sourceCode.match(/cy\.(\w+)/g) || [];
+        const uniqueCommands = new Set(cypressCommands.map(cmd => cmd.slice(3)));
+        
+        // Check for unsupported commands
+        uniqueCommands.forEach(command => {
+            if (!this.commandMappings[command]) {
+                warnings.push(`Unsupported command: ${command}`);
+            }
+        });
+    
+        // Check for specific patterns that need attention
         if (this.sourceCode.includes('cy.intercept(')) {
-            warnings.push('Cypress intercept commands need manual conversion to Playwright route.fulfill()');
+            warnings.push('Cypress intercept commands need manual conversion');
         }
         if (this.sourceCode.includes('cy.wait(')) {
-            warnings.push('Consider replacing cy.wait() with more specific Playwright waitFor conditions');
+            warnings.push('Consider replacing cy.wait() with specific waitFor conditions');
         }
-        if (this.sourceCode.includes('should(')) {
-            warnings.push('Some Cypress assertions might need manual adjustment');
+        if (this.sourceCode.match(/cy\.\w+\(\)\.(\w+)\(\)/)) {
+            warnings.push('Chained commands may need manual review');
         }
-
+    
         return warnings;
     }
 }
