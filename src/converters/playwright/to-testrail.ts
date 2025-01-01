@@ -20,6 +20,57 @@ export class PlaywrightToTestRailConverter extends BaseConverter {
         'getByTestId': 'Locate element by test ID'
     };
 
+    convertToTargetFramework(): ConversionResult {
+        try {
+            let convertedCode = '';
+            convertedCode += `const { testCase, suite, step } = require('@testrail/api');\n\n`;
+
+            // Handle simple file with no test structure
+            if (!this.sourceCode.includes('test.describe')) {
+                // Extract standalone tests
+                const testCases = this.parseTestCases();
+                
+                if (testCases.length === 0) {
+                    // If no test cases found, try to parse as a single test case
+                    const match = this.sourceCode.match(/test\s*\(\s*['"]([^'"]+)['"]/);
+                    if (match) {
+                        const testCase: TestCase = {
+                            title: match[1],
+                            body: this.extractBody(this.sourceCode.slice(this.sourceCode.indexOf('=>') + 2)),
+                            assertions: []
+                        };
+                        convertedCode += this.convertTestCase(testCase);
+                    }
+                } else {
+                    // Convert found test cases
+                    testCases.forEach(testCase => {
+                        convertedCode += this.convertTestCase(testCase);
+                    });
+                }
+                
+                return {
+                    success: true,
+                    convertedCode,
+                    warnings: this.generateWarnings()
+                };
+            }
+
+            // Convert structured tests
+            const suites = this.parseSuites();
+            for (const suite of suites) {
+                convertedCode += this.convertSuite(suite);
+            }
+
+            return {
+                success: true,
+                convertedCode,
+                warnings: this.generateWarnings()
+            };
+        } catch (error: unknown) {
+            return this.handleError(error);
+        }
+    }
+
     parseTestCases(): TestCase[] {
         const testCases: TestCase[] = [];
         const testPattern = /test\s*\(\s*(['"`])(.*?)\1\s*,\s*async\s*\(\s*{\s*page\s*}\s*\)\s*=>\s*{/g;
@@ -61,48 +112,6 @@ export class PlaywrightToTestRailConverter extends BaseConverter {
         }
 
         return suites;
-    }
-
-    convertToTargetFramework(): ConversionResult {
-        try {
-            let convertedCode = '';
-            convertedCode += `const { testCase, suite, step } = require('@testrail/api');\n\n`;
-
-            // Handle simple file with no test structure
-            if (!this.sourceCode.includes('test.describe') && !this.sourceCode.includes('test(')) {
-                const actions = this.extractPlaywrightActions(this.sourceCode);
-                const assertions = this.extractAssertions(this.sourceCode);
-                
-                convertedCode += `testCase('Converted Test', () => {\n`;
-                actions.forEach(action => {
-                    convertedCode += this.convertActionToStep(action);
-                });
-                assertions.forEach(assertion => {
-                    convertedCode += this.formatStepWrapper(assertion);
-                });
-                convertedCode += `});\n`;
-                
-                return {
-                    success: true,
-                    convertedCode,
-                    warnings: this.generateWarnings()
-                };
-            }
-
-            // Convert structured tests
-            const suites = this.parseSuites();
-            for (const suite of suites) {
-                convertedCode += this.convertSuite(suite);
-            }
-
-            return {
-                success: true,
-                convertedCode,
-                warnings: this.generateWarnings()
-            };
-        } catch (error: unknown) {
-            return this.handleError(error);
-        }
     }
 
     private extractBody(code: string): string {
@@ -159,11 +168,11 @@ export class PlaywrightToTestRailConverter extends BaseConverter {
 
     private extractPlaywrightActions(testBody: string): string[] {
         const actions: string[] = [];
-        const actionPattern = /await\s+page\.([\w]+)\s*\((.*?)\)/g;
+        const actionPattern = /await\s+page\.([\w]+)\s*\(\s*([^)]+)\)/g;
         let match;
 
         while ((match = actionPattern.exec(testBody)) !== null) {
-            actions.push(`${match[1]}:${match[2]}`);
+            actions.push(`${match[1]}:${match[2].trim()}`);
         }
 
         return actions;
@@ -194,7 +203,7 @@ export class PlaywrightToTestRailConverter extends BaseConverter {
     }
 
     private convertTestCase(testCase: TestCase): string {
-        let result = `  testCase('${testCase.title}', () => {\n`;
+        let result = `testCase('${testCase.title}', () => {\n`;
         
         // Convert Playwright actions to TestRail steps
         const actions = this.extractPlaywrightActions(testCase.body);
@@ -207,7 +216,7 @@ export class PlaywrightToTestRailConverter extends BaseConverter {
             result += this.formatStepWrapper(assertion);
         });
 
-        result += '  });\n\n';
+        result += '});\n\n';
         return result;
     }
 
@@ -231,11 +240,11 @@ export class PlaywrightToTestRailConverter extends BaseConverter {
                 stepDescription = `${this.actionToStep[cmd] || 'Perform action'} ${cleanParams}`;
         }
 
-        return `    step('${stepDescription}', () => {\n      // ${cmd}(${cleanParams})\n    });\n`;
+        return `  step('${stepDescription}', () => {\n    // ${cmd}(${cleanParams})\n  });\n`;
     }
 
     private formatStepWrapper(stepDescription: string): string {
-        return `    step('${stepDescription}', () => {\n      // Verification step\n    });\n`;
+        return `  step('${stepDescription}', () => {\n    // Verification step\n  });\n`;
     }
 
     private convertSetupSteps(suite: TestSuite): string {
@@ -271,9 +280,9 @@ export class PlaywrightToTestRailConverter extends BaseConverter {
     private convertHooksToSteps(hooks: string[], description: string): string {
         let result = '';
         hooks.forEach((hook, index) => {
-            result += `    step('${description} ${index + 1}', () => {\n`;
-            result += `      // ${hook.trim()}\n`;
-            result += '    });\n';
+            result += `  step('${description} ${index + 1}', () => {\n`;
+            result += `    // ${hook.trim()}\n`;
+            result += '  });\n';
         });
         return result;
     }
