@@ -1,6 +1,12 @@
 import { BaseConverter } from '../base-converter';
 import { TestCase, TestSuite, ConversionResult } from '../../types';
 
+interface AssertionInfo {
+    element: string;
+    assertion: string;
+    value?: string;
+}
+
 export class PlaywrightToTestRailConverter extends BaseConverter {
     private readonly actionToStep: { [key: string]: string } = {
         'goto': 'Navigate to',
@@ -62,6 +68,28 @@ export class PlaywrightToTestRailConverter extends BaseConverter {
             let convertedCode = '';
             convertedCode += `const { testCase, suite, step } = require('@testrail/api');\n\n`;
 
+            // Handle simple file with no test structure
+            if (!this.sourceCode.includes('test.describe') && !this.sourceCode.includes('test(')) {
+                const actions = this.extractPlaywrightActions(this.sourceCode);
+                const assertions = this.extractAssertions(this.sourceCode);
+                
+                convertedCode += `testCase('Converted Test', () => {\n`;
+                actions.forEach(action => {
+                    convertedCode += this.convertActionToStep(action);
+                });
+                assertions.forEach(assertion => {
+                    convertedCode += this.formatStepWrapper(assertion);
+                });
+                convertedCode += `});\n`;
+                
+                return {
+                    success: true,
+                    convertedCode,
+                    warnings: this.generateWarnings()
+                };
+            }
+
+            // Convert structured tests
             const suites = this.parseSuites();
             for (const suite of suites) {
                 convertedCode += this.convertSuite(suite);
@@ -87,19 +115,34 @@ export class PlaywrightToTestRailConverter extends BaseConverter {
             index++;
         }
 
-        return code.slice(0, index - 1);
+        return code.slice(0, index - 1).trim();
     }
 
     private extractAssertions(testBody: string): string[] {
-        const assertions: string[] = [];
-        const assertionPattern = /expect\((.*?)\)\.(.*?)\(/g;
+        const assertions: AssertionInfo[] = [];
+        const assertionPattern = /expect\((.*?)\)\.(toBeVisible|toHaveText|toBe\w+)\((.*?)\)/g;
         let match;
 
         while ((match = assertionPattern.exec(testBody)) !== null) {
-            assertions.push(`${match[1]}.${match[2]}`);
+            assertions.push({
+                element: match[1].trim(),
+                assertion: match[2],
+                value: match[3]?.trim()
+            });
         }
 
-        return assertions;
+        return assertions.map(a => this.formatAssertionStep(a));
+    }
+
+    private formatAssertionStep(info: AssertionInfo): string {
+        switch (info.assertion) {
+            case 'toBeVisible':
+                return `Verify ${info.element} is visible`;
+            case 'toHaveText':
+                return `Verify ${info.element} has text "${info.value}"`;
+            default:
+                return `Verify ${info.element} ${info.assertion.replace('to', '').toLowerCase()}`;
+        }
     }
 
     private extractHooks(code: string, pattern: RegExp): string[] {
@@ -112,6 +155,18 @@ export class PlaywrightToTestRailConverter extends BaseConverter {
         }
 
         return hooks;
+    }
+
+    private extractPlaywrightActions(testBody: string): string[] {
+        const actions: string[] = [];
+        const actionPattern = /await\s+page\.([\w]+)\s*\((.*?)\)/g;
+        let match;
+
+        while ((match = actionPattern.exec(testBody)) !== null) {
+            actions.push(`${match[1]}:${match[2]}`);
+        }
+
+        return actions;
     }
 
     private convertSuite(testSuite: TestSuite): string {
@@ -142,61 +197,45 @@ export class PlaywrightToTestRailConverter extends BaseConverter {
         let result = `  testCase('${testCase.title}', () => {\n`;
         
         // Convert Playwright actions to TestRail steps
-        const steps = this.extractPlaywrightActions(testCase.body);
-        steps.forEach(step => {
-            result += this.convertActionToStep(step);
+        const actions = this.extractPlaywrightActions(testCase.body);
+        actions.forEach(action => {
+            result += this.convertActionToStep(action);
         });
 
         // Convert assertions to verification steps
         testCase.assertions.forEach(assertion => {
-            result += this.convertAssertionToStep(assertion);
+            result += this.formatStepWrapper(assertion);
         });
 
         result += '  });\n\n';
         return result;
     }
 
-    private extractPlaywrightActions(testBody: string): string[] {
-        const actions: string[] = [];
-        const actionPattern = /page\.([\w]+)\((.*?)\)/g;
-        let match;
-
-        while ((match = actionPattern.exec(testBody)) !== null) {
-            actions.push(`${match[1]}:${match[2]}`);
-        }
-
-        return actions;
-    }
-
     private convertActionToStep(action: string): string {
         const [cmd, params] = action.split(':');
-        const stepType = this.actionToStep[cmd] || 'Perform action';
-        
-        return `    step('${stepType}', () => {\n      ${this.formatStepDescription(cmd, params)}\n    });\n`;
-    }
-
-    private convertAssertionToStep(assertion: string): string {
-        return `    step('Verify', () => {\n      // Verify ${assertion}\n    });\n`;
-    }
-
-    private formatStepDescription(command: string, params: string): string {
-        // Remove quotes and format parameters for readability
         const cleanParams = params.replace(/['"]/g, '').trim();
         
-        switch (command) {
+        let stepDescription = '';
+        switch (cmd) {
             case 'goto':
-                return `// Navigate to URL: ${cleanParams}`;
+                stepDescription = `Navigate to ${cleanParams}`;
+                break;
             case 'click':
-                return `// Click element: ${cleanParams}`;
+                stepDescription = `Click on ${cleanParams}`;
+                break;
             case 'fill':
-                return `// Enter text into element: ${cleanParams}`;
-            case 'getByText':
-                return `// Locate element containing text: ${cleanParams}`;
-            case 'getByRole':
-                return `// Locate element by role: ${cleanParams}`;
+                const [selector, value] = cleanParams.split(',').map(p => p.trim());
+                stepDescription = `Enter "${value}" into ${selector}`;
+                break;
             default:
-                return `// ${command}: ${cleanParams}`;
+                stepDescription = `${this.actionToStep[cmd] || 'Perform action'} ${cleanParams}`;
         }
+
+        return `    step('${stepDescription}', () => {\n      // ${cmd}(${cleanParams})\n    });\n`;
+    }
+
+    private formatStepWrapper(stepDescription: string): string {
+        return `    step('${stepDescription}', () => {\n      // Verification step\n    });\n`;
     }
 
     private convertSetupSteps(suite: TestSuite): string {
