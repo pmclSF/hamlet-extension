@@ -73,8 +73,6 @@ describe("Command Tests", () => {
     
         const doc = await openTestDocument(input);
         documents.push(doc);
-    
-        console.log('Before conversion:', doc.getText());
         
         await vscode.window.showTextDocument(doc, { preview: false });
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -82,7 +80,6 @@ describe("Command Tests", () => {
         await executeCommandWithRetry("hamlet.convertToCypress");
         
         const text = doc.getText();
-        console.log('After conversion:', text);
     
         const expectedPatterns = [
             '/// <reference types="cypress" />',

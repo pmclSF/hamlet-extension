@@ -56,9 +56,6 @@ describe("Integration Tests", () => {
 
             // Get the final text
             const text = doc.getText();
-            
-            // Debug logging
-            console.log('Converted text:', text);
 
             // Verify conversion
             assert.ok(
