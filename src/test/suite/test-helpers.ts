@@ -2,24 +2,19 @@ import * as vscode from "vscode";
 import * as assert from "assert";
 
 export async function openTestDocument(content: string): Promise<vscode.TextDocument> {
-    // Create document
     const document = await vscode.workspace.openTextDocument({
         content: content.trim(),
         language: 'typescript'
     });
 
-    // Show document
-    const editor = await vscode.window.showTextDocument(document, {
+    await vscode.window.showTextDocument(document, {
         preview: false,
         preserveFocus: false
     });
 
-    // Ensure document is ready
+    // Wait for document to be fully loaded
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Format document
-    await vscode.commands.executeCommand('editor.action.formatDocument');
-    
     return document;
 }
 
@@ -31,18 +26,24 @@ export async function executeCommandWithRetry(
     command: string,
     maxAttempts: number = 3
 ): Promise<void> {
+    let attempts = 0;
     let lastError: Error | undefined;
-    
-    for (let i = 0; i < maxAttempts; i++) {
+
+    while (attempts < maxAttempts) {
         try {
+            if (attempts > 0) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
             await vscode.commands.executeCommand(command);
+            // Wait for conversion to complete
+            await new Promise(resolve => setTimeout(resolve, 1000));
             return;
         } catch (error) {
-            console.log(`Attempt ${i + 1} failed:`, error);
             lastError = error as Error;
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            attempts++;
+            if (attempts === maxAttempts) break;
         }
     }
-    
+
     throw lastError || new Error(`Command ${command} failed after ${maxAttempts} attempts`);
 }
