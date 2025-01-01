@@ -47,25 +47,16 @@ describe("Framework-Specific Converter Tests", () => {
             const converter = new PlaywrightToTestRailConverter(source);
             const result = converter.convertToTargetFramework();
 
-            // Debug output
-            console.log('Source:', source);
-            console.log('Converted:', result.convertedCode);
-
-            // Check basic structure
             assert.ok(result.success, "Conversion should succeed");
             assert.ok(
                 result.convertedCode.includes("testCase('navigation'"),
                 "Should include test case"
             );
-
-            // Check navigation step
             assert.match(
                 result.convertedCode,
                 /step\(['"]Navigate to \/test['"].*?\)/s,
                 "Should include navigation step"
             );
-
-            // Check click step
             assert.match(
                 result.convertedCode,
                 /step\(['"]Click.*?button['"].*?\)/s,
@@ -83,18 +74,11 @@ describe("Framework-Specific Converter Tests", () => {
             const converter = new PlaywrightToTestRailConverter(source);
             const result = converter.convertToTargetFramework();
 
-            // Debug output
-            console.log('Source:', source);
-            console.log('Converted:', result.convertedCode);
-
-            // Check basic structure
             assert.ok(result.success, "Conversion should succeed");
             assert.ok(
                 result.convertedCode.includes("testCase('visibility test'"),
                 "Should include test case"
             );
-
-            // Check verification step
             assert.match(
                 result.convertedCode,
                 /step\(['"]Verify.*?visible['"].*?\)/s,
@@ -113,11 +97,7 @@ describe("Framework-Specific Converter Tests", () => {
             const converter = new PlaywrightToTestRailConverter(source);
             const result = converter.convertToTargetFramework();
 
-            // Debug output
-            console.log('Source:', source);
-            console.log('Converted:', result.convertedCode);
-
-            assert.ok(result.success);
+            assert.ok(result.success, "Conversion should succeed");
             assert.match(
                 result.convertedCode,
                 /step\(['"]Navigate to \/login['"].*?\)/s,
