@@ -130,12 +130,12 @@ async function handleConversion(converter: IConverter, editor: vscode.TextEditor
         if (!result.convertedCode) {
             throw new Error('No converted code generated');
         }
-
+        
         // Log the conversion
         outputChannel.appendLine('Converting:');
         outputChannel.appendLine('Original: ' + editor.document.getText().substring(0, 100) + '...');
         outputChannel.appendLine('Converted: ' + result.convertedCode.substring(0, 100) + '...');
-
+        
         // Apply the conversion
         const edit = new vscode.WorkspaceEdit();
         const fullRange = new vscode.Range(
@@ -147,7 +147,6 @@ async function handleConversion(converter: IConverter, editor: vscode.TextEditor
         const success = await vscode.workspace.applyEdit(edit);
         
         if (success) {
-            await editor.document.save();
             vscode.window.showInformationMessage('Conversion successful!');
             return true;
         } else {
