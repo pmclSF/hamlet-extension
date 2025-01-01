@@ -15,27 +15,44 @@ export class PlaywrightToCypressConverter extends BaseConverter {
 
     convertToTargetFramework(): ConversionResult {
         try {
-            // Store the original source for error cases
-            const originalSource = this.sourceCode;
-            
-            // Remove Playwright imports first
-            let convertedCode = this.sourceCode
-                .replace(/import\s*{[^}]*}\s*from\s*['"]@playwright\/test['"];?\s*/g, '');
+            // First convert the content, then handle imports
+            let convertedCode = this.sourceCode;
     
-            // Convert describe blocks
+            // Store all matches before replacing
+            const testMatches: Array<{
+                title: string;
+                body: string;
+                full: string;
+            }> = [];
+    
+            // Find all test blocks first
+            const testRegex = /test\s*\(\s*(['"`])(.*?)\1\s*,\s*async\s*\(\{\s*page\s*\}\)\s*=>\s*{([\s\S]*?)}\)/g;
+            let match;
+            while ((match = testRegex.exec(this.sourceCode)) !== null) {
+                testMatches.push({
+                    title: match[2],
+                    body: match[3],
+                    full: match[0]
+                });
+            }
+    
+            // Convert each test block
+            testMatches.forEach(({ title, body, full }) => {
+                const convertedBody = this.convertTestBody(body);
+                const converted = `it('${title}', () => {${convertedBody}})`;
+                convertedCode = convertedCode.replace(full, converted);
+            });
+    
+            // Convert test.describe to describe
             convertedCode = convertedCode.replace(
-                /test\.describe\s*\(\s*(['"`])(.*?)\1\s*,\s*(?:\(\s*\)\s*=>\s*)?{([\s\S]*?)}\s*\)/g,
-                (_match: string, quote: string, title: string, content: string) => {
-                    // Process the content to handle nested tests
-                    let processedContent = content.replace(
-                        /test\s*\(\s*(['"`])(.*?)\1\s*,\s*async\s*\(\{\s*page\s*\}\)\s*=>\s*{([\s\S]*?)}\s*\)/g,
-                        (_: string, innerQuote: string, testTitle: string, testBody: string) => {
-                            const convertedBody = this.convertTestBody(testBody);
-                            return `it(${innerQuote}${testTitle}${innerQuote}, () => {${convertedBody}})`;
-                        }
-                    );
-                    return `describe(${quote}${title}${quote}, () => {${processedContent}})`;
-                }
+                /test\.describe\s*\(\s*(['"`])(.*?)\1\s*,\s*(?:\(\s*\)\s*=>\s*)?{/g,
+                'describe($1$2$1, () => {'
+            );
+    
+            // Remove Playwright imports
+            convertedCode = convertedCode.replace(
+                /import\s*{[^}]*}\s*from\s*['"]@playwright\/test['"];?\s*/g,
+                ''
             );
     
             // Add Cypress types reference
@@ -43,27 +60,17 @@ export class PlaywrightToCypressConverter extends BaseConverter {
                 convertedCode = `/// <reference types="cypress" />\n\n${convertedCode}`;
             }
     
-            // Clean up formatting
-            convertedCode = convertedCode
-                .split('\n')
-                .map(line => line.trim())
-                .filter(line => line.length > 0)
-                .join('\n');
+            // Format the code
+            convertedCode = this.formatCode(convertedCode);
     
             // Validate conversion
             if (!convertedCode.includes('describe(') || !convertedCode.includes('it(')) {
                 console.warn('Conversion validation failed:', {
                     hasDescribe: convertedCode.includes('describe('),
                     hasIt: convertedCode.includes('it('),
-                    original: originalSource,
                     converted: convertedCode
                 });
-                return {
-                    success: false,
-                    convertedCode: originalSource,
-                    errors: ['Failed to convert test structure'],
-                    warnings: ['Test structure conversion failed']
-                };
+                throw new Error('Failed to convert test structure');
             }
     
             return {
@@ -93,6 +100,10 @@ export class PlaywrightToCypressConverter extends BaseConverter {
             {
                 from: /await\s+page\.locator\(['"]([^'"]+)['"]\)\.click\(\)/g,
                 to: "cy.get('$1').click()"
+            },
+            {
+                from: /await\s+page\.fill\(['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\)/g,
+                to: "cy.get('$1').type('$2')"
             }
         ];
     
@@ -105,7 +116,21 @@ export class PlaywrightToCypressConverter extends BaseConverter {
         convertedBody = convertedBody.replace(/await\s+/g, '');
     
         // Add indentation
-        return convertedBody
+        return `\n${this.indentLines(convertedBody)}\n`;
+    }
+    
+    private formatCode(code: string): string {
+        return code
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .join('\n')
+            .replace(/\n{3,}/g, '\n\n') // Remove extra blank lines
+            .trim() + '\n';
+    }
+    
+    private indentLines(text: string): string {
+        return text
             .split('\n')
             .map(line => line.trim())
             .filter(line => line.length > 0)
