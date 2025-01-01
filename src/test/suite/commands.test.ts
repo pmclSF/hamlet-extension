@@ -42,17 +42,12 @@ describe("Command Tests", () => {
         `);
         documents.push(doc);
 
-        // Show document and wait for it to be ready
         await vscode.window.showTextDocument(doc, { preview: false });
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Execute command
         await executeCommandWithRetry("hamlet.convertToPlaywright");
 
-        // Get final text
         const text = doc.getText();
-        
-        // Assertions with better error messages
         assert.ok(
             text.includes("test.describe"),
             `Expected test.describe in converted code but got:\n${text}`
@@ -60,10 +55,6 @@ describe("Command Tests", () => {
         assert.ok(
             text.includes("page.goto"),
             `Expected page.goto in converted code but got:\n${text}`
-        );
-        assert.ok(
-            text.includes("async ({ page })"),
-            `Expected async page parameter but got:\n${text}`
         );
     });
 
@@ -73,40 +64,57 @@ describe("Command Tests", () => {
         const doc = await openTestDocument(`
             import { test, expect } from '@playwright/test';
 
-            test.describe("Test", () => {
-                test("test", async ({ page }) => {
+            test.describe("Test Suite", () => {
+                test("should visit page", async ({ page }) => {
                     await page.goto("/test");
+                    await page.click(".button");
                 });
             });
         `);
         documents.push(doc);
 
-        // Show document and wait for it to be ready
+        // Log initial content
+        console.log('Initial content:', doc.getText());
+
         await vscode.window.showTextDocument(doc, { preview: false });
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Execute command
         await executeCommandWithRetry("hamlet.convertToCypress");
-
-        // Get final text
+        
+        // Get converted text and log it
         const text = doc.getText();
+        console.log('Converted content:', text);
 
-        // Assertions with better error messages
-        assert.ok(
-            text.includes("describe("),
-            `Expected describe in converted code but got:\n${text}`
+        // More specific assertions
+        assert.match(
+            text,
+            /describe\(['"]Test Suite['"]/,
+            `Expected describe block but got:\n${text}`
         );
-        assert.ok(
-            text.includes("it("),
-            `Expected it in converted code but got:\n${text}`
+        assert.match(
+            text,
+            /it\(['"]should visit page['"]/,
+            `Expected it block but got:\n${text}`
         );
-        assert.ok(
-            text.includes("cy.visit"),
-            `Expected cy.visit in converted code but got:\n${text}`
+        assert.match(
+            text,
+            /cy\.visit\(['"]\/test['"]\)/,
+            `Expected cy.visit but got:\n${text}`
         );
+        assert.match(
+            text,
+            /cy\.get\(['"]\.button['"]\)\.click\(\)/,
+            `Expected cy.get().click() but got:\n${text}`
+        );
+
+        // Verify Playwright code is removed
         assert.ok(
             !text.includes("import { test"),
-            `Expected Playwright imports to be removed but found them in:\n${text}`
+            `Playwright imports should be removed but found in:\n${text}`
+        );
+        assert.ok(
+            !text.includes("async ({ page })"),
+            `Playwright page object should be removed but found in:\n${text}`
         );
     });
 

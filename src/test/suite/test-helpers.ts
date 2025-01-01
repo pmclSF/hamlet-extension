@@ -1,23 +1,6 @@
 import * as vscode from "vscode";
 import * as assert from "assert";
 
-export async function openTestDocument(content: string): Promise<vscode.TextDocument> {
-    const document = await vscode.workspace.openTextDocument({
-        content: content.trim(),
-        language: 'typescript'
-    });
-
-    await vscode.window.showTextDocument(document, {
-        preview: false,
-        preserveFocus: false
-    });
-
-    // Wait for document to be fully loaded
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    return document;
-}
-
 export function assertBlockStructure(blocks: any[], expectedLength: number, message?: string) {
     assert.strictEqual(blocks.length, expectedLength, message || `Expected ${expectedLength} blocks`);
 }
@@ -39,6 +22,7 @@ export async function executeCommandWithRetry(
             await new Promise(resolve => setTimeout(resolve, 1000));
             return;
         } catch (error) {
+            console.log(`Attempt ${attempts + 1} failed:`, error);
             lastError = error as Error;
             attempts++;
             if (attempts === maxAttempts) break;
@@ -46,4 +30,21 @@ export async function executeCommandWithRetry(
     }
 
     throw lastError || new Error(`Command ${command} failed after ${maxAttempts} attempts`);
+}
+
+export async function openTestDocument(content: string): Promise<vscode.TextDocument> {
+    const document = await vscode.workspace.openTextDocument({
+        content: content.trim(),
+        language: 'typescript'
+    });
+
+    await vscode.window.showTextDocument(document, {
+        preview: false,
+        preserveFocus: false
+    });
+
+    // Wait for document to be fully loaded
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    return document;
 }
