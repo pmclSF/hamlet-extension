@@ -12,14 +12,27 @@ export class CypressToPlaywrightConverter extends BaseConverter {
         'type': 'fill',
         'check': 'check',
         'uncheck': 'uncheck',
-        'select': 'selectOption'
+        'select': 'selectOption',
+        'should': 'toBeVisible' // Add mapping for should -> expect assertions
+    };
+
+    private readonly assertionMappings: { [key: string]: string } = {
+        'be.visible': 'toBeVisible',
+        'be.hidden': 'toBeHidden',
+        'exist': 'toBeAttached',
+        'have.text': 'toHaveText',
+        'have.value': 'toHaveValue',
+        'be.checked': 'toBeChecked',
+        'be.disabled': 'toBeDisabled',
+        'be.enabled': 'toBeEnabled'
     };
 
     parseTestCases(): TestCase[] {
         const testCases: TestCase[] = [];
         let match;
+        const testPattern = new RegExp(cypressPatterns.testDefinition, 'g');
 
-        while ((match = cypressPatterns.testDefinition.exec(this.sourceCode)) !== null) {
+        while ((match = testPattern.exec(this.sourceCode)) !== null) {
             const title = match[2];
             const startIndex = match.index + match[0].length;
             const testBody = this.extractBody(this.sourceCode.slice(startIndex));
@@ -37,8 +50,9 @@ export class CypressToPlaywrightConverter extends BaseConverter {
     parseSuites(): TestSuite[] {
         const suites: TestSuite[] = [];
         let match;
+        const suitePattern = new RegExp(cypressPatterns.suiteDefinition, 'g');
 
-        while ((match = cypressPatterns.suiteDefinition.exec(this.sourceCode)) !== null) {
+        while ((match = suitePattern.exec(this.sourceCode)) !== null) {
             const title = match[2];
             const startIndex = match.index + match[0].length;
             const suiteBody = this.extractBody(this.sourceCode.slice(startIndex));
@@ -58,24 +72,22 @@ export class CypressToPlaywrightConverter extends BaseConverter {
 
     convertToTargetFramework(): ConversionResult {
         try {
-            // Early return for non-test code
+            let convertedCode = this.sourceCode;
+            const warnings: string[] = [];
+
+            // Handle simple file with no test structure
             if (!this.sourceCode.includes('describe(') && !this.sourceCode.includes('it(')) {
+                convertedCode = this.convertCypressCommands(convertedCode);
                 return {
                     success: true,
-                    convertedCode: this.sourceCode,
-                    warnings: []
+                    convertedCode,
+                    warnings: this.generateWarnings()
                 };
             }
 
-            const suites = this.parseSuites();
-            let convertedCode = '';
-
-            // Add Playwright imports only if we're converting test code
-            convertedCode += "import { test, expect } from '@playwright/test';\n\n";
-
-            for (const suite of suites) {
-                convertedCode += this.convertSuite(suite);
-            }
+            // Convert test structure
+            convertedCode = "import { test, expect } from '@playwright/test';\n\n";
+            convertedCode += this.convertTestStructure();
 
             return {
                 success: true,
@@ -85,6 +97,31 @@ export class CypressToPlaywrightConverter extends BaseConverter {
         } catch (error: unknown) {
             return this.handleError(error);
         }
+    }
+
+    private convertTestStructure(): string {
+        const suites = this.parseSuites();
+        return suites.map(suite => this.convertSuite(suite)).join('\n');
+    }
+
+    private convertCypressCommands(code: string): string {
+        // Convert Cypress commands to Playwright
+        Object.entries(this.commandMappings).forEach(([cypressCmd, playwrightCmd]) => {
+            code = code.replace(
+                new RegExp(`cy\\.${cypressCmd}\\(`, 'g'),
+                `await page.${playwrightCmd}(`
+            );
+        });
+
+        // Convert assertions
+        Object.entries(this.assertionMappings).forEach(([cypressAssertion, playwrightAssertion]) => {
+            code = code.replace(
+                new RegExp(`should\\(['"]${cypressAssertion}['"]\\)`, 'g'),
+                `expect().${playwrightAssertion}()`
+            );
+        });
+
+        return code;
     }
 
     private extractBody(code: string): string {
@@ -97,14 +134,15 @@ export class CypressToPlaywrightConverter extends BaseConverter {
             index++;
         }
 
-        return code.slice(0, index - 1);
+        return code.slice(0, index - 1).trim();
     }
 
     private extractAssertions(testBody: string): string[] {
         const assertions: string[] = [];
         let match;
+        const assertionPattern = new RegExp(cypressPatterns.assertion, 'g');
 
-        while ((match = cypressPatterns.assertion.exec(testBody)) !== null) {
+        while ((match = assertionPattern.exec(testBody)) !== null) {
             assertions.push(match[1]);
         }
 
@@ -145,28 +183,20 @@ export class CypressToPlaywrightConverter extends BaseConverter {
             result += this.convertTestCase(testCase);
         }
 
-        result += '});\n\n';
+        result += '});\n';
         return result;
     }
 
     private convertTestCase(testCase: TestCase): string {
-        let convertedBody = testCase.body;
-
-        // Convert Cypress commands to Playwright
-        Object.entries(this.commandMappings).forEach(([cypressCmd, playwrightCmd]) => {
-            convertedBody = convertedBody.replace(
-                new RegExp(`cy.${cypressCmd}\\(`, 'g'),
-                `page.${playwrightCmd}(`
-            );
-        });
-
-        return `  test('${testCase.title}', async ({ page }) => {\n${convertedBody}  });\n\n`;
+        let convertedBody = this.convertCypressCommands(testCase.body);
+        return `  test('${testCase.title}', async ({ page }) => {\n    ${convertedBody}\n  });\n\n`;
     }
 
     private convertHooks(hookType: string, hooks: string[]): string {
-        return hooks.map(hook => 
-            `  test.${hookType}(async ({ page }) => {\n${hook}  });\n\n`
-        ).join('');
+        return hooks.map(hook => {
+            const convertedHookBody = this.convertCypressCommands(hook);
+            return `  test.${hookType}(async ({ page }) => {\n    ${convertedHookBody}\n  });\n\n`;
+        }).join('');
     }
 
     private generateWarnings(): string[] {
@@ -177,6 +207,9 @@ export class CypressToPlaywrightConverter extends BaseConverter {
         }
         if (this.sourceCode.includes('cy.wait(')) {
             warnings.push('Consider replacing cy.wait() with more specific Playwright waitFor conditions');
+        }
+        if (this.sourceCode.includes('should(')) {
+            warnings.push('Some Cypress assertions might need manual adjustment');
         }
 
         return warnings;
