@@ -16,8 +16,8 @@ export interface TestSuite {
 }
 
 export interface ConversionResult {
+    success: boolean;
     convertedCode: string;
+    errors: string[];
     warnings?: string[];
-    errors?: string[];
-    success?: boolean;
 }

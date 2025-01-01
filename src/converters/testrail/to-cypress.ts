@@ -66,7 +66,8 @@ export class TestRailToCypressConverter extends BaseConverter {
             return {
                 success: true,
                 convertedCode,
-                warnings: this.generateWarnings()
+                warnings: this.generateWarnings(),
+                errors: [] // Add empty errors array
             };
         } catch (error) {
             return this.handleError(error);

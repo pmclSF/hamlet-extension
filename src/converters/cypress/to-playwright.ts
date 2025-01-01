@@ -81,7 +81,8 @@ export class CypressToPlaywrightConverter extends BaseConverter {
                 return {
                     success: true,
                     convertedCode,
-                    warnings: this.generateWarnings()
+                    warnings: this.generateWarnings(),
+                    errors: [] // Add empty errors array
                 };
             }
 
@@ -92,7 +93,8 @@ export class CypressToPlaywrightConverter extends BaseConverter {
             return {
                 success: true,
                 convertedCode,
-                warnings: this.generateWarnings()
+                warnings: this.generateWarnings(),
+                errors: [] // Add empty errors array
             };
         } catch (error: unknown) {
             return this.handleError(error);
