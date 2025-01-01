@@ -61,7 +61,7 @@ describe("Command Tests", () => {
     it("convertToCypress command works", async function() {
         this.timeout(10000);
         
-        const doc = await openTestDocument(`
+        const input = `
     import { test, expect } from '@playwright/test';
     
     test.describe("Test Suite", () => {
@@ -69,8 +69,9 @@ describe("Command Tests", () => {
             await page.goto("/test");
             await page.click(".button");
         });
-    });`.trim());
-        
+    });`.trim();
+    
+        const doc = await openTestDocument(input);
         documents.push(doc);
     
         console.log('Before conversion:', doc.getText());
@@ -83,17 +84,23 @@ describe("Command Tests", () => {
         const text = doc.getText();
         console.log('After conversion:', text);
     
-        // More specific assertions
-        [
-            ['/// <reference types="cypress" />', 'Should have Cypress reference'],
-            ['describe(\'Test Suite\'', 'Should have describe block'],
-            ['it(\'should visit page\'', 'Should have it block'],
-            ['cy.visit(\'/test\')', 'Should have cy.visit command'],
-            ['cy.get(\'.button\').click()', 'Should have cy.get command']
-        ].forEach(([expected, message]) => {
+        const expectedPatterns = [
+            '/// <reference types="cypress" />',
+            "describe('Test Suite'",
+            "it('should visit page'",
+            "cy.visit('/test')",
+            "cy.get('.button').click()"
+        ];
+    
+        expectedPatterns.forEach(pattern => {
+            const includes = text.includes(pattern);
+            if (!includes) {
+                console.error(`Missing pattern: ${pattern}`);
+                console.error(`Full converted text:\n${text}`);
+            }
             assert.ok(
-                text.includes(expected),
-                `${message}\nExpected to find: ${expected}\nIn:\n${text}`
+                includes,
+                `Expected to find "${pattern}" in converted code:\n${text}`
             );
         });
     });

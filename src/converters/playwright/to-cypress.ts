@@ -15,117 +15,106 @@ export class PlaywrightToCypressConverter extends BaseConverter {
 
     convertToTargetFramework(): ConversionResult {
         try {
-            // First, normalize line endings and remove extra whitespace
-            let convertedCode = this.sourceCode.replace(/\r\n/g, '\n').trim();
-    
-            // Create an array to store the converted lines
             const lines: string[] = [];
             
-            // Add Cypress types reference
+            // Add Cypress reference
             lines.push('/// <reference types="cypress" />');
             lines.push('');
-    
-            // Split into blocks
-            const blocks = convertedCode.split(/test\.describe/);
-            
-            // Process each block
-            for (let i = 1; i < blocks.length; i++) { // Start from 1 to skip initial content
-                const block = blocks[i];
-                
-                // Extract describe block details
-                const describeMatch = block.match(/\(\s*['"`](.*?)['"`]\s*,\s*(?:\(\s*\)\s*=>\s*)?{([\s\S]*)/);
-                
-                if (describeMatch) {
-                    const [_, title, content] = describeMatch;
-                    
-                    // Start describe block
-                    lines.push(`describe('${title}', () => {`);
-                    
-                    // Convert test blocks
-                    const testBlocks = content.match(/test\(\s*['"`](.*?)['"`]\s*,\s*async\s*\(\{\s*page\s*\}\)\s*=>\s*{([\s\S]*?)\}\s*\)/g) || [];
-                    
-                    testBlocks.forEach(testBlock => {
-                        const testMatch = testBlock.match(/test\(\s*['"`](.*?)['"`]\s*,\s*async\s*\(\{\s*page\s*\}\)\s*=>\s*{([\s\S]*?)\}\s*\)/);
-                        if (testMatch) {
-                            const [__, testTitle, testBody] = testMatch;
-                            const convertedBody = this.convertTestBody(testBody);
-                            lines.push(`  it('${testTitle}', () => {`);
-                            lines.push(convertedBody);
-                            lines.push('  });');
-                        }
-                    });
-                    
-                    // Close describe block
-                    lines.push('});');
-                    lines.push('');
+
+            // Parse the source code
+            const sourceLines = this.sourceCode.split('\n');
+            let inDescribeBlock = false;
+            let currentIndentation = '';
+
+            for (let i = 0; i < sourceLines.length; i++) {
+                const line = sourceLines[i].trim();
+
+                // Skip import statements
+                if (line.startsWith('import')) {
+                    continue;
+                }
+
+                // Convert describe block
+                if (line.includes('test.describe')) {
+                    const match = line.match(/test\.describe\s*\(\s*['"`](.*?)['"`]/);
+                    if (match) {
+                        inDescribeBlock = true;
+                        lines.push(`describe('${match[1]}', () => {`);
+                        continue;
+                    }
+                }
+
+                // Convert test block
+                if (line.includes('test(')) {
+                    const match = line.match(/test\s*\(\s*['"`](.*?)['"`]/);
+                    if (match) {
+                        lines.push(`  it('${match[1]}', () => {`);
+                        continue;
+                    }
+                }
+
+                // Convert page commands
+                if (line.includes('page.')) {
+                    const convertedLine = this.convertPageCommand(line);
+                    if (convertedLine) {
+                        lines.push(`    ${convertedLine}`);
+                        continue;
+                    }
+                }
+
+                // Handle closing braces
+                if (line === '});') {
+                    if (inDescribeBlock) {
+                        lines.push('});');
+                        inDescribeBlock = false;
+                    } else {
+                        lines.push('  });');
+                    }
+                    continue;
                 }
             }
-    
-            // Join all lines
-            convertedCode = lines.join('\n');
-    
-            // Validate conversion
-            const hasDescribe = convertedCode.includes('describe(');
-            const hasIt = convertedCode.includes('it(');
-    
-            if (!hasDescribe || !hasIt) {
-                console.warn('Conversion validation failed:', {
-                    input: this.sourceCode,
-                    output: convertedCode,
-                    hasDescribe,
-                    hasIt
-                });
-                throw new Error('Failed to convert test structure');
-            }
-    
+
             return {
                 success: true,
-                convertedCode,
-                warnings: this.generateWarnings()
+                convertedCode: lines.join('\n'),
+                warnings: this.generateWarnings(),
+                errors: []
             };
-        } catch (error: unknown) {
+        } catch (error) {
             console.error('Conversion error:', error);
             return this.handleError(error);
         }
     }
-    
-    private convertTestBody(body: string): string {
-        let convertedBody = body.trim();
-    
-        // Convert Playwright commands to Cypress commands
-        const conversions = [
-            {
-                from: /await\s+page\.goto\(['"]([^'"]+)['"]\)/g,
-                to: "    cy.visit('$1');"
-            },
-            {
-                from: /await\s+page\.click\(['"]([^'"]+)['"]\)/g,
-                to: "    cy.get('$1').click();"
-            },
-            {
-                from: /await\s+page\.locator\(['"]([^'"]+)['"]\)\.click\(\)/g,
-                to: "    cy.get('$1').click();"
-            },
-            {
-                from: /await\s+page\.type\(['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\)/g,
-                to: "    cy.get('$1').type('$2');"
+
+    private convertPageCommand(line: string): string | null {
+        // Remove await and trim
+        line = line.replace('await', '').trim();
+
+        // Convert goto
+        if (line.includes('page.goto')) {
+            const match = line.match(/page\.goto\s*\(\s*['"`](.*?)['"`]\s*\)/);
+            if (match) {
+                return `cy.visit('${match[1]}');`;
             }
-        ];
-    
-        // Apply each conversion
-        conversions.forEach(({ from, to }) => {
-            convertedBody = convertedBody.replace(from, to);
-        });
-    
-        // Remove leftover awaits and blank lines
-        convertedBody = convertedBody
-            .replace(/await\s+/g, '')
-            .split('\n')
-            .map(line => line.trim())
-            .filter(line => line.length > 0)
-            .join('\n');
-    
-        return convertedBody;
+        }
+
+        // Convert click
+        if (line.includes('.click')) {
+            const match = line.match(/page\.(?:locator|click)\s*\(\s*['"`](.*?)['"`]\s*\)(?:\.click\(\))?/);
+            if (match) {
+                return `cy.get('${match[1]}').click();`;
+            }
+        }
+
+        // Convert type/fill
+        if (line.includes('.fill') || line.includes('.type')) {
+            const match = line.match(/page\.(?:fill|type)\s*\(\s*['"`](.*?)['"`]\s*,\s*['"`](.*?)['"`]\s*\)/);
+            if (match) {
+                return `cy.get('${match[1]}').type('${match[2]}');`;
+            }
+        }
+
+        return null;
     }
 
     parseTestCases(): TestCase[] {
@@ -181,7 +170,7 @@ export class PlaywrightToCypressConverter extends BaseConverter {
             index++;
         }
 
-        return code.slice(0, index - 1);
+        return code.slice(0, Math.max(0, index - 1));
     }
 
     private extractAssertions(testBody: string): string[] {
@@ -190,7 +179,7 @@ export class PlaywrightToCypressConverter extends BaseConverter {
         let match;
 
         while ((match = assertionPattern.exec(testBody)) !== null) {
-            assertions.push(match[1]);
+            assertions.push(match[0]);
         }
 
         return assertions;
@@ -208,7 +197,8 @@ export class PlaywrightToCypressConverter extends BaseConverter {
         return hooks;
     }
 
-    private convertAssertion(playwrightAssertion: string): string {
+    private convertAssertion(assertion: string): string {
+        // Convert Playwright assertions to Cypress
         const assertionMap: { [key: string]: string } = {
             'toBeVisible': 'be.visible',
             'toBeHidden': 'be.hidden',
@@ -218,28 +208,27 @@ export class PlaywrightToCypressConverter extends BaseConverter {
             'toBeDisabled': 'be.disabled',
             'toBeEnabled': 'be.enabled'
         };
-        
-        return assertionMap[playwrightAssertion] || playwrightAssertion;
+
+        for (const [playwright, cypress] of Object.entries(assertionMap)) {
+            if (assertion.includes(playwright)) {
+                return assertion.replace(playwright, cypress);
+            }
+        }
+
+        return assertion;
     }
 
     private generateWarnings(): string[] {
-        const warningPatterns = [
-            {
-                pattern: 'route.fulfill',
-                message: 'Network interception needs manual conversion to cy.intercept()'
-            },
-            {
-                pattern: 'waitForLoadState',
-                message: 'waitForLoadState needs conversion to appropriate Cypress wait command'
-            },
-            {
-                pattern: 'page.evaluate',
-                message: 'page.evaluate needs conversion to cy.window() or cy.invoke()'
-            }
-        ];
-    
-        return warningPatterns
-            .filter(({ pattern }) => this.sourceCode.includes(pattern))
-            .map(({ message }) => message);
+        const warnings: string[] = [];
+        
+        if (this.sourceCode.includes('page.evaluate')) {
+            warnings.push('page.evaluate needs to be converted to cy.window() or cy.invoke()');
+        }
+        
+        if (this.sourceCode.includes('expect')) {
+            warnings.push('Playwright assertions need to be converted to Cypress assertions');
+        }
+
+        return warnings;
     }
 }
