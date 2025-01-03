@@ -15,6 +15,10 @@
 test_backup_*/
 *_OLD/
 *.bak
+*backup_*/
+
+# Old converters
+converter_fixes*/
 
 # Shell scripts
 *.sh
