@@ -18,6 +18,6 @@ export interface TestSuite {
 export interface ConversionResult {
     success: boolean;
     convertedCode: string;
-    errors?: string[];
+    errors: string[];
     warnings?: string[];
 }

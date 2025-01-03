@@ -39,22 +39,80 @@ describe("Framework-Specific Converter Tests", () => {
     describe("Playwright to TestRail", () => {
         it("converts page actions to steps", () => {
             const source = `
-                test("navigation", async ({ page }) => {
-                    await page.goto("/test");
-                    await page.click(".button");
+                test('navigation', async ({ page }) => {
+                    await page.goto('/test');
+                    await page.click('.button');
                 });
             `;
             const converter = new PlaywrightToTestRailConverter(source);
             const result = converter.convertToTargetFramework();
-            assert.ok(result.convertedCode.includes("step('Navigate to"));
-            assert.ok(result.convertedCode.includes("step('Click"));
+
+            assert.ok(result.success, "Conversion should succeed");
+            assert.ok(
+                result.convertedCode.includes("testCase('navigation'"),
+                "Should include test case"
+            );
+            assert.match(
+                result.convertedCode,
+                /step\(['"]Navigate to \/test['"].*?\)/s,
+                "Should include navigation step"
+            );
+            assert.match(
+                result.convertedCode,
+                /step\(['"]Click.*?button['"].*?\)/s,
+                "Should include click step"
+            );
         });
 
         it("handles expect assertions", () => {
-            const source = `test("test", async ({ page }) => { expect(page.locator(".element")).toBeVisible(); });`;
+            const source = `
+                test('visibility test', async ({ page }) => {
+                    const element = page.locator('.element');
+                    await expect(element).toBeVisible();
+                });
+            `;
             const converter = new PlaywrightToTestRailConverter(source);
             const result = converter.convertToTargetFramework();
-            assert.ok(result.convertedCode.includes("step('Verify"));
+
+            assert.ok(result.success, "Conversion should succeed");
+            assert.ok(
+                result.convertedCode.includes("testCase('visibility test'"),
+                "Should include test case"
+            );
+            assert.match(
+                result.convertedCode,
+                /step\(['"]Verify.*?visible['"].*?\)/s,
+                "Should include verification step"
+            );
+        });
+
+        it("handles complex test cases", () => {
+            const source = `
+                test('complex test', async ({ page }) => {
+                    await page.goto('/login');
+                    await page.fill('#username', 'user');
+                    await expect(page.locator('.error')).toHaveText('Invalid');
+                });
+            `;
+            const converter = new PlaywrightToTestRailConverter(source);
+            const result = converter.convertToTargetFramework();
+
+            assert.ok(result.success, "Conversion should succeed");
+            assert.match(
+                result.convertedCode,
+                /step\(['"]Navigate to \/login['"].*?\)/s,
+                "Should include navigation"
+            );
+            assert.match(
+                result.convertedCode,
+                /step\(['"]Enter.*?user.*?username['"].*?\)/s,
+                "Should include input"
+            );
+            assert.match(
+                result.convertedCode,
+                /step\(['"]Verify.*?Invalid['"].*?\)/s,
+                "Should include verification"
+            );
         });
     });
 });

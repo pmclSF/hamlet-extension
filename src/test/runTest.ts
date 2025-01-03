@@ -7,46 +7,25 @@ async function main() {
         const extensionDevelopmentPath = projectRoot;
         const extensionTestsPath = path.resolve(projectRoot, 'out/test/suite/index.js');
 
-        // Log more information about our test setup
+        // Log information about test setup
         console.log('Project Root:', projectRoot);
         console.log('Extension Development Path:', extensionDevelopmentPath);
         console.log('Extension Tests Path:', extensionTestsPath);
 
-        // Try to execute the run function directly first
-        console.log('\n🔍 Attempting direct test execution...');
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const testModule = require(extensionTestsPath) as { run: () => Promise<void> };
-            console.log('Test module loaded. Available exports:', Object.keys(testModule));
-            
-            if (typeof testModule.run === 'function') {
-                console.log('Found run function, executing directly...');
-                await testModule.run();
-                console.log('Direct test execution completed successfully');
-            } else {
-                console.log('No run function found in test module');
-            }
-        } catch (directErr) {
-            console.error('Direct test execution failed:', directErr);
-            if (directErr instanceof Error) {
-                console.error('Stack trace:', directErr.stack);
-            }
-        }
-
-        // Then try the VSCode test runner
         console.log('\n🚀 Starting VSCode test runner...');
         const testResults = await runTests({
             extensionDevelopmentPath,
             extensionTestsPath,
             launchArgs: [
                 '--disable-gpu',
-                '--headless',
-                '--verbose'
+                '--disable-extensions',
+                '--no-sandbox'
             ],
             extensionTestsEnv: {
                 MOCHA_REPORTER: 'spec',
                 MOCHA_TIMEOUT: '60000',
-                VSCODE_DEBUG_EXTENSION_HOST: 'true'
+                ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
+                ELECTRON_NO_ATTACH_CONSOLE: 'true'
             }
         });
 

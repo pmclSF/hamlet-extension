@@ -65,6 +65,15 @@ export class ASTHelper {
     }
 
     /**
+     * Adds a child node to a parent node
+     */
+    static addChildNode(parent: ASTNode, child: ASTNode): void {
+        if (parent.children) {
+            parent.children.push(child);
+        }
+    }
+
+    /**
      * Traverses an AST and applies a callback function to each node
      */
     static traverse(node: ASTNode, callback: (node: ASTNode) => void): void {
