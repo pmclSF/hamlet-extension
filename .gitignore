@@ -18,7 +18,7 @@ test_backup_*/
 *backup_*/
 
 # Old converters
-*convert*/
+converter_fixes*/
 
 # Shell scripts
 *.sh
